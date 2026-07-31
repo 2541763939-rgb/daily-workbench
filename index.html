@@ -305,6 +305,55 @@ body.dark .tag-item{background:#1a1a3e}
   box-shadow:var(--shadow);
 }
 
+/* 备忘录 */
+.memo-panel{display:none}
+.memo-panel.show{display:block}
+.memo-form{display:flex;gap:8px;margin-bottom:14px}
+.memo-form input{
+  flex:1;padding:10px 14px;border:1.5px solid var(--border);
+  border-radius:12px;font-size:0.82rem;outline:none;background:var(--card);color:var(--text);
+}
+.memo-form input:focus{border-color:var(--pink)}
+.memo-form button{
+  padding:10px 16px;border:none;border-radius:12px;
+  background:var(--pink);color:#fff;font-size:0.8rem;font-weight:600;cursor:pointer;
+}
+.memo-item{
+  display:flex;align-items:center;gap:10px;
+  padding:12px 14px;background:var(--card);border-radius:12px;
+  margin-bottom:8px;box-shadow:var(--shadow);border:1px solid var(--border);
+}
+.memo-item.done{opacity:0.5}
+.memo-item.done .memo-text{text-decoration:line-through;color:var(--text-sub)}
+.memo-check{
+  width:22px;height:22px;border-radius:50%;flex-shrink:0;
+  border:2px solid var(--pink);display:flex;align-items:center;justify-content:center;
+  font-size:0.75rem;color:transparent;cursor:pointer;transition:all 0.2s;
+}
+.memo-item.done .memo-check{background:var(--green);border-color:var(--green);color:#fff}
+.memo-text{flex:1;font-size:0.82rem;word-break:break-word}
+.memo-del{
+  width:26px;height:26px;border-radius:6px;border:none;
+  background:transparent;color:var(--text-sub);font-size:1rem;
+  cursor:pointer;flex-shrink:0;
+}
+.memo-del:hover{color:var(--pink-dark)}
+.memo-time{font-size:0.6rem;color:var(--text-sub);margin-right:8px}
+
+/* 侧边栏备忘录入口 */
+.sidebar-memo{
+  padding:8px 14px;border-top:1px solid var(--border);
+  display:flex;align-items:center;gap:8px;cursor:pointer;
+  font-size:0.8rem;color:var(--text);transition:all 0.15s;
+}
+.sidebar-memo:hover{color:var(--pink-dark);background:var(--pink-light)}
+.sidebar-memo.active{background:var(--pink);color:#fff}
+.sidebar-memo .memo-count{
+  margin-left:auto;font-size:0.65rem;
+  background:rgba(0,0,0,0.06);padding:1px 7px;border-radius:8px;
+}
+.sidebar-memo.active .memo-count{background:rgba(255,255,255,0.3)}
+
 /* 响应式 */
 @media(max-width:768px){
   .sidebar{transform:translateX(-100%);transition:transform 0.3s}
@@ -393,6 +442,12 @@ body.dark .tag-item{background:#1a1a3e}
     </div>
   </div>
 
+  <div class="sidebar-memo" id="sidebarMemo" onclick="toggleMemo()">
+    <span>📝</span>
+    <span>备忘录</span>
+    <span class="memo-count" id="memoCount">0</span>
+  </div>
+
   <div class="sidebar-footer">
     内置 45 · 自定义 <span id="customCount">0</span>
   </div>
@@ -444,6 +499,15 @@ body.dark .tag-item{background:#1a1a3e}
 
     <!-- 配方列表 -->
     <div id="recipeList"></div>
+
+    <!-- 备忘录面板 -->
+    <div class="memo-panel" id="memoPanel">
+      <div class="memo-form">
+        <input type="text" id="memoInput" placeholder="写一条备忘录..." onkeydown="if(event.key==='Enter')addMemo()">
+        <button onclick="addMemo()">添加</button>
+      </div>
+      <div id="memoList"></div>
+    </div>
   </div>
 </div>
 
@@ -522,6 +586,7 @@ let currentFontSize = 16;
 function init(){
   updateCustomCount();
   renderRecipes();
+  $('memoCount').textContent = memos.filter(m => !m.done).length;
   // 默认倍率
   recipes.forEach(r => scaleMap[r.id] = 1);
   customRecipes.forEach(r => scaleMap[r.id] = 1);
@@ -906,6 +971,82 @@ function toggleSidebar(){
 
 function showShopping(){
   showToast('采购清单功能开发中');
+}
+
+// ==================== 备忘录 ====================
+let memos = [];
+try{ memos = JSON.parse(localStorage.getItem('memos')||'[]'); }catch(e){}
+let showMemo = false;
+
+function toggleMemo(){
+  showMemo = !showMemo;
+  $('sidebarMemo').classList.toggle('active', showMemo);
+  if(showMemo){
+    $('recipeList').style.display = 'none';
+    $('memoPanel').classList.add('show');
+    // 隐藏配方相关元素
+    document.querySelector('.content-header').style.display = 'none';
+    document.querySelector('.ingredient-check').style.display = 'none';
+    document.querySelector('.filter-bar').style.display = 'none';
+    renderMemos();
+  } else {
+    $('recipeList').style.display = '';
+    $('memoPanel').classList.remove('show');
+    document.querySelector('.content-header').style.display = '';
+    document.querySelector('.ingredient-check').style.display = '';
+    document.querySelector('.filter-bar').style.display = '';
+  }
+}
+
+function addMemo(){
+  const val = $('memoInput').value.trim();
+  if(!val){ showToast('请输入内容'); return; }
+  memos.push({
+    id: Date.now(),
+    text: val,
+    done: false,
+    time: new Date().toLocaleString('zh-CN', {month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})
+  });
+  saveMemos();
+  $('memoInput').value = '';
+  renderMemos();
+  showToast('已添加');
+}
+
+function toggleMemoDone(id){
+  const m = memos.find(x => x.id === id);
+  if(m){ m.done = !m.done; saveMemos(); renderMemos(); }
+}
+
+function deleteMemo(id){
+  memos = memos.filter(x => x.id !== id);
+  saveMemos();
+  renderMemos();
+  showToast('已删除');
+}
+
+function saveMemos(){
+  localStorage.setItem('memos', JSON.stringify(memos));
+  $('memoCount').textContent = memos.filter(m => !m.done).length;
+}
+
+function renderMemos(){
+  $('memoCount').textContent = memos.filter(m => !m.done).length;
+  const container = $('memoList');
+  if(memos.length === 0){
+    container.innerHTML = '<div class="empty-state">📝 暂无备忘录，添加一条吧</div>';
+    return;
+  }
+  // 未完成的在前
+  const sorted = [...memos].sort((a,b) => a.done - b.done || b.id - a.id);
+  container.innerHTML = sorted.map(m => `
+    <div class="memo-item ${m.done?'done':''}">
+      <div class="memo-check" onclick="toggleMemoDone(${m.id})">${m.done?'✓':''}</div>
+      <div class="memo-text">${m.text}</div>
+      <span class="memo-time">${m.time}</span>
+      <button class="memo-del" onclick="deleteMemo(${m.id})">×</button>
+    </div>
+  `).join('');
 }
 
 function showToast(msg){
