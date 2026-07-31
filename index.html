@@ -512,7 +512,7 @@ body.dark .import-preview-box{background:#1a1a3e}
     <div class="cat-item active" data-cat="全部配方" onclick="filterCat('全部配方')">
       <span class="cat-icon">🍰</span>
       <span class="cat-name">全部配方</span>
-      <span class="cat-count">37</span>
+      <span class="cat-count">45</span>
     </div>
     <div class="cat-item " data-cat="面包类" onclick="filterCat('面包类')">
       <span class="cat-icon">🍞</span>
@@ -854,9 +854,26 @@ function init(){
   updateCustomCount();
   renderRecipes();
   $('memoCount').textContent = memos.filter(m => !m.done).length;
+  // 动态更新侧边栏分类计数
+  updateSidebarCounts();
   // 默认倍率
   recipes.forEach(r => scaleMap[r.id] = 1);
   customRecipes.forEach(r => scaleMap[r.id] = 1);
+}
+
+function updateSidebarCounts(){
+  const all = getAllRecipes();
+  document.querySelectorAll('.cat-item').forEach(el => {
+    const cat = el.dataset.cat;
+    if(!cat) return;
+    const countEl = el.querySelector('.cat-count');
+    if(!countEl) return;
+    if(cat === '全部配方'){
+      countEl.textContent = all.length;
+    } else {
+      countEl.textContent = all.filter(r => r.cat === cat).length;
+    }
+  });
 }
 
 function getAllRecipes(){
