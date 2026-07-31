@@ -233,6 +233,21 @@ body.dark .tag-item{background:#1a1a3e}
 .ing-name{font-size:0.75rem;color:var(--text)}
 .ing-weight{font-size:0.75rem;color:var(--pink-dark);font-weight:600}
 
+/* 配料分组 */
+.ing-group-title{
+  grid-column:1/-1;font-size:0.72rem;font-weight:700;
+  color:var(--pink-dark);padding:6px 0 2px;margin-top:4px;
+  border-bottom:1px dashed var(--border);
+}
+.ing-group-title:first-child{margin-top:0}
+.ingredient-row{display:flex;gap:6px;margin-bottom:6px}
+.ingredient-row input{flex:1}
+.ingredient-row input.g-input{width:70px;flex:none}
+.ingredient-row select.ing-group-select{
+  width:60px;flex:none;padding:4px 2px;border:1px solid var(--border);
+  border-radius:6px;font-size:0.7rem;background:var(--card);color:var(--text);outline:none;
+}
+
 /* 步骤 */
 .rc-steps{
   padding:0 16px 12px;
@@ -293,9 +308,6 @@ body.dark .tag-item{background:#1a1a3e}
 }
 .form-row input:focus,.form-row textarea:focus{border-color:var(--pink)}
 .form-row textarea{resize:vertical;min-height:60px}
-.ingredient-row{display:flex;gap:6px;margin-bottom:6px}
-.ingredient-row input{flex:1}
-.ingredient-row input.g-input{width:70px;flex:none}
 .modal-footer{
   display:flex;gap:8px;padding:12px 18px;border-top:1px solid var(--border);justify-content:flex-end;
 }
@@ -822,7 +834,7 @@ body.dark .import-preview-box{background:#1a1a3e}
 
 <script>
 // ==================== 自动版本更新 ====================
-const APP_VERSION = '202507311733'; // 每次部署修改此时间戳
+const APP_VERSION = '202507311745'; // 每次部署修改此时间戳
 (function(){
   const stored = localStorage.getItem('appVersion');
   if(stored && stored !== APP_VERSION && !sessionStorage.getItem('_reloaded')){
@@ -944,16 +956,25 @@ function renderRecipeCard(r){
   const isFav = favorites.includes(r.id);
   const isCustom = r.id > 37;
   
-  // 配料网格
-  let ingHtml = '<div class="ing-grid">';
+  // 配料网格（按分组）
+  const groups = {};
   r.ingredients.forEach(ing => {
-    const g = parseFloat(ing.g) || 0;
-    const unit = ing.g.replace(/[\d.]/g, '');
-    const num = parseFloat(ing.g) || 0;
-    const scaled = num > 0 ? (num * scale).toFixed(num % 1 === 0 ? 0 : 1) + unit : ing.g;
-    ingHtml += `<div class="ing-item"><span class="ing-name">${ing.name}</span><span class="ing-weight">${scaled}</span></div>`;
+    const g = ing.group || '';
+    if(!groups[g]) groups[g] = [];
+    groups[g].push(ing);
   });
-  ingHtml += '</div>';
+  let ingHtml = '';
+  const groupLabels = {'面团':'🍞 面团','馅料':'🥣 馅料','':'📋 其他'};
+  for(const [group, ings] of Object.entries(groups)){
+    ingHtml += `<div class="ing-group-title">${groupLabels[group] || '📋 ' + group}</div><div class="ing-grid">`;
+    ings.forEach(ing => {
+      const unit = ing.g.replace(/[\d.]/g, '');
+      const num = parseFloat(ing.g) || 0;
+      const scaled = num > 0 ? (num * scale).toFixed(num % 1 === 0 ? 0 : 1) + unit : ing.g;
+      ingHtml += `<div class="ing-item"><span class="ing-name">${ing.name}</span><span class="ing-weight">${scaled}</span></div>`;
+    });
+    ingHtml += '</div>';
+  }
   
   // 步骤
   let stepsHtml = '';
@@ -1127,14 +1148,14 @@ function showAddModal(){
   $('mTags').value = '';
   $('mTips').value = '';
   $('mSteps').value = '';
-  $('mIngredients').innerHTML = '<div class="ingredient-row"><input placeholder="原料名"><input class="g-input" placeholder="克重"></div>';
+  $('mIngredients').innerHTML = '<div class="ingredient-row"><input placeholder="原料名"><input class="g-input" placeholder="克重"><select class="ing-group-select"><option value="">其他</option><option value="面团">面团</option><option value="馅料">馅料</option></select></div>';
   $('modalOverlay').classList.add('show');
 }
 
 function addIngRow(){
   const div = document.createElement('div');
   div.className = 'ingredient-row';
-  div.innerHTML = '<input placeholder="原料名"><input class="g-input" placeholder="克重">';
+  div.innerHTML = '<input placeholder="原料名"><input class="g-input" placeholder="克重"><select class="ing-group-select"><option value="">其他</option><option value="面团">面团</option><option value="馅料">馅料</option></select>';
   $('mIngredients').appendChild(div);
 }
 
@@ -1157,7 +1178,8 @@ function editRecipe(id){
   (r.ingredients||[]).forEach(ing => {
     const div = document.createElement('div');
     div.className = 'ingredient-row';
-    div.innerHTML = `<input value="${ing.name}"><input class="g-input" value="${ing.g}">`;
+    const group = ing.group || '';
+    div.innerHTML = `<input value="${ing.name}"><input class="g-input" value="${ing.g}"><select class="ing-group-select"><option value="" ${group===''?'selected':''}>其他</option><option value="面团" ${group==='面团'?'selected':''}>面团</option><option value="馅料" ${group==='馅料'?'selected':''}>馅料</option></select>`;
     $('mIngredients').appendChild(div);
   });
   // 如果没有配料行，加一个空的
@@ -1172,8 +1194,9 @@ function saveRecipe(){
   const ingredients = [];
   document.querySelectorAll('#mIngredients .ingredient-row').forEach(row => {
     const inputs = row.querySelectorAll('input');
+    const select = row.querySelector('select');
     if(inputs[0].value.trim()){
-      ingredients.push({name: inputs[0].value.trim(), g: inputs[1].value.trim() || '适量'});
+      ingredients.push({name: inputs[0].value.trim(), g: inputs[1].value.trim() || '适量', group: select ? select.value : ''});
     }
   });
   
@@ -1548,10 +1571,17 @@ function parseRecipeText(text){
   
   // 逐行解析食材
   const ingLines = ingSection.split(/\n/);
+  let currentGroup = ''; // 当前分组
   for(const line of ingLines){
     const trimmed = line.replace(/^[\-\*•\s]+/, '').trim();
     if(!trimmed || trimmed.length < 2) continue;
     if(/^(步骤|做法|制作|贴士|注意|小窍门|Tips|[一二三四五六七八九十]+[、.])/i.test(trimmed)) break;
+    
+    // 检测分组标题（纯文字短行，不含数字和单位）
+    if(trimmed.length < 15 && !/[\d.]/.test(trimmed) && !/^(高|低|中|特|超)/.test(trimmed)){
+      if(/面团|面皮|面包|主面团/.test(trimmed)){ currentGroup = '面团'; continue; }
+      if(/馅|馅料|夹心|内馅|芋泥|奶油馅|卡仕达|奶黄|豆沙|果酱/.test(trimmed)){ currentGroup = '馅料'; continue; }
+    }
     
     // 先尝试逗号分隔拆分行（同行多食材）
     const segments = trimmed.split(/[，,]/);
@@ -1565,7 +1595,7 @@ function parseRecipeText(text){
         const sm2 = s.match(/^(.+?)\s+(\d+[\d.]*\s*(?:g|克|个|只|片|勺|茶匙|汤匙|ml|毫升|杯|块|根|颗|粒|张|条|适量|少许))/i);
         const sm = sm1 || sm2;
         if(sm){
-          result.ingredients.push({name: sm[1].trim(), g: sm[2].trim()});
+          result.ingredients.push({name: sm[1].trim(), g: sm[2].trim(), group: currentGroup});
           parsedAny = true;
         }
       }
@@ -1576,14 +1606,14 @@ function parseRecipeText(text){
     const m1 = trimmed.match(/^(.+?)\s+((?:[\d.]+\s*)?(?:g|克|个|只|片|勺|茶匙|汤匙|适量|少许|ml|毫升|杯|块|根|颗|粒|张|条|把|滴|小勺|大勺|克))$/i)
             || trimmed.match(/^(.+)(少许|适量)$/);
     if(m1){
-      result.ingredients.push({name: m1[1].trim(), g: m1[2].trim()});
+      result.ingredients.push({name: m1[1].trim(), g: m1[2].trim(), group: currentGroup});
       continue;
     }
     
     // 模式2: "食材名：克重" 或 "食材名:克重"
     const m2 = trimmed.match(/^(.+?)[：:]\s*([\d.]+.+)$/);
     if(m2 && /[\dg克G个只片勺].*/.test(m2[2])){
-      result.ingredients.push({name: m2[1].trim(), g: m2[2].trim()});
+      result.ingredients.push({name: m2[1].trim(), g: m2[2].trim(), group: currentGroup});
       continue;
     }
     
@@ -1591,7 +1621,7 @@ function parseRecipeText(text){
     const m3 = trimmed.match(/^(.+?)\s+((?:[\d.]+\s*)?(?:g|克|个|只|片|勺|茶匙|汤匙|ml|毫升|杯|块|根|颗|粒|张|条|适量|少许))/i)
             || trimmed.match(/^(.+)(少许|适量)$/);
     if(m3){
-      result.ingredients.push({name: m3[1].trim(), g: m3[2].trim()});
+      result.ingredients.push({name: m3[1].trim(), g: m3[2].trim(), group: currentGroup});
       continue;
     }
   }
@@ -1687,7 +1717,8 @@ function doParse(){
     result.ingredients.forEach(ing => {
       const div = document.createElement('div');
       div.className = 'ingredient-row';
-      div.innerHTML = `<input value="${ing.name}"><input class="g-input" value="${ing.g}">`;
+      const group = ing.group || '';
+      div.innerHTML = `<input value="${ing.name}"><input class="g-input" value="${ing.g}"><select class="ing-group-select"><option value="" ${group===''?'selected':''}>其他</option><option value="面团" ${group==='面团'?'selected':''}>面团</option><option value="馅料" ${group==='馅料'?'selected':''}>馅料</option></select>`;
       $('imIngredients').appendChild(div);
     });
   } else {
@@ -1707,7 +1738,7 @@ function doParse(){
 function addImIngRow(){
   const div = document.createElement('div');
   div.className = 'ingredient-row';
-  div.innerHTML = '<input placeholder="原料名"><input class="g-input" placeholder="克重">';
+  div.innerHTML = '<input placeholder="原料名"><input class="g-input" placeholder="克重"><select class="ing-group-select"><option value="">其他</option><option value="面团">面团</option><option value="馅料">馅料</option></select>';
   $('imIngredients').appendChild(div);
 }
 
@@ -1726,8 +1757,9 @@ function saveImportedRecipe(){
   const ingredients = [];
   document.querySelectorAll('#imIngredients .ingredient-row').forEach(row => {
     const inputs = row.querySelectorAll('input');
+    const select = row.querySelector('select');
     if(inputs[0].value.trim()){
-      ingredients.push({name: inputs[0].value.trim(), g: inputs[1].value.trim() || '适量'});
+      ingredients.push({name: inputs[0].value.trim(), g: inputs[1].value.trim() || '适量', group: select ? select.value : ''});
     }
   });
   
