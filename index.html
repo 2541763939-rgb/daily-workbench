@@ -823,7 +823,7 @@ body.dark .import-preview-box{background:#1a1a3e}
 
 <script>
 // ==================== 自动版本更新 ====================
-const APP_VERSION = '202507311719'; // 每次部署修改此时间戳
+const APP_VERSION = '202507311733'; // 每次部署修改此时间戳
 (function(){
   const stored = localStorage.getItem('appVersion');
   if(stored && stored !== APP_VERSION && !sessionStorage.getItem('_reloaded')){
@@ -1517,15 +1517,15 @@ function parseRecipeText(text){
   // 合并文本用于全文匹配
   const fullText = lines.join('\n');
   
-  // 2. 分类识别
+  // 2. 分类识别（面包类优先，避免"奶油包"误判为夹心酱类）
   const catRules = [
-    {keys: ['奶茶','果茶','奶盖','拿铁','咖啡','柠檬茶','乌龙茶','绿茶','红茶','抹茶','椰奶','杨枝甘露','多肉','芝芝','波波','芋泥波波','黑糖珍珠'], cat: '奶茶类'},
-    {keys: ['酱','馅','奶油馅','卡仕达','奶黄','豆沙','果酱','抹酱','柠檬酱'], cat: '夹心酱类'},
-    {keys: ['月饼','馒头','包子','花卷','发糕','蒸饺','年糕','粽子','青团','米糕'], cat: '中式烘焙类'},
-    {keys: ['酥','塔','派','可颂','丹麦','蝴蝶酥','蛋黄酥','老婆饼','蛋挞','拿破仑','牛角','千层酥'], cat: '酥点类'},
-    {keys: ['饼干','曲奇','薄脆','瓦片','手指饼','马卡龙','司康'], cat: '饼干类'},
-    {keys: ['蛋糕','戚风','慕斯','海绵','芝士蛋糕','磅蛋糕','马芬','杯子蛋糕','瑞士卷','古早','提拉米苏'], cat: '蛋糕类'},
     {keys: ['面包','吐司','贝果','欧包','餐包','法棍','布里欧修','碱水','佛卡夏','披萨'], cat: '面包类'},
+    {keys: ['蛋糕','戚风','慕斯','海绵','芝士蛋糕','磅蛋糕','马芬','杯子蛋糕','瑞士卷','古早','提拉米苏'], cat: '蛋糕类'},
+    {keys: ['奶茶','果茶','奶盖','拿铁','咖啡','柠檬茶','乌龙茶','绿茶','红茶','抹茶','椰奶','杨枝甘露','多肉','芝芝','波波','珍珠','芋泥波波','黑糖珍珠'], cat: '奶茶类'},
+    {keys: ['饼干','曲奇','薄脆','瓦片','手指饼','马卡龙','司康'], cat: '饼干类'},
+    {keys: ['酥','塔','派','可颂','丹麦','蝴蝶酥','蛋黄酥','老婆饼','蛋挞','拿破仑','牛角','千层酥'], cat: '酥点类'},
+    {keys: ['月饼','馒头','包子','花卷','发糕','蒸饺','年糕','粽子','青团','米糕'], cat: '中式烘焙类'},
+    {keys: ['酱','馅','奶油馅','卡仕达','奶黄','豆沙','果酱','抹酱','柠檬酱'], cat: '夹心酱类'},
   ];
   const lowerName = result.name.toLowerCase();
   const lowerText = fullText.toLowerCase();
@@ -1537,14 +1537,18 @@ function parseRecipeText(text){
   }
   
   // 3. 食材解析
-  // 先找到"材料/食材/配料"区域
+  // 先找到"材料/食材/配料"区域（要求关键词在行首或段首）
   let ingSection = '';
-  const ingMatch = fullText.match(/(?:材料|食材|配料|原料)[：:]*\s*([\s\S]*?)(?=(?:步骤|做法|制作|过程|工艺|贴士|注意|小窍门|Tips|$))/i);
+  const ingMatch = fullText.match(/(?:^|\n)\s*(?:材料|食材|配料|原料|配方)[：:]*\s*\n?([\s\S]*?)(?=(?:\n\s*(?:步骤|做法|制作|过程|工艺|二[、.]|贴士|注意|小窍门|Tips|$)))/i);
   if(ingMatch){
     ingSection = ingMatch[1];
   } else {
-    // 无材料标记：排除有步骤编号的行
-    ingSection = lines.filter(l => !/^\d+[\.、．)]/.test(l)).join('\n');
+    // 无材料标记：排除有步骤编号的行和纯文字段落标题
+    ingSection = lines.filter(l => {
+      if(/^\d+[\.、．)]/.test(l)) return false;
+      if(/^[一二三四五六七八九十]+[、.]/.test(l)) return false;
+      return true;
+    }).join('\n');
   }
   
   // 逐行解析食材
@@ -1552,7 +1556,7 @@ function parseRecipeText(text){
   for(const line of ingLines){
     const trimmed = line.replace(/^[\-\*•\s]+/, '').trim();
     if(!trimmed || trimmed.length < 2) continue;
-    if(/^(步骤|做法|制作|贴士|注意|小窍门|Tips)/i.test(trimmed)) break;
+    if(/^(步骤|做法|制作|贴士|注意|小窍门|Tips|[一二三四五六七八九十]+[、.])/i.test(trimmed)) break;
     
     // 先尝试逗号分隔拆分行（同行多食材）
     const segments = trimmed.split(/[，,]/);
@@ -1573,8 +1577,9 @@ function parseRecipeText(text){
       if(parsedAny) continue;
     }
     
-    // 模式1: "食材名 克重" 如 "高筋面粉 250g"
-    const m1 = trimmed.match(/^(.+?)\s+([\d.]+(?:\s*[g克G][\s]*|个|只|片|勺|茶匙|汤匙|适量|少许|ml|ML毫升|杯|块|根|颗|粒|张|条|把|滴|小勺|大勺|克))$/);
+    // 模式1: "食材名 克重" 如 "高筋面粉 250g" 或 "干桂花少许"
+    const m1 = trimmed.match(/^(.+?)\s+((?:[\d.]+\s*)?(?:g|克|个|只|片|勺|茶匙|汤匙|适量|少许|ml|毫升|杯|块|根|颗|粒|张|条|把|滴|小勺|大勺|克))$/i)
+            || trimmed.match(/^(.+)(少许|适量)$/);
     if(m1){
       result.ingredients.push({name: m1[1].trim(), g: m1[2].trim()});
       continue;
@@ -1587,8 +1592,9 @@ function parseRecipeText(text){
       continue;
     }
     
-    // 模式3: "食材名 数字+单位" 松散匹配
-    const m3 = trimmed.match(/^(.+?)\s+(\d+[\d.]*\s*(?:g|克|个|只|片|勺|茶匙|汤匙|ml|毫升|杯|块|根|颗|粒|张|条|适量|少许))/i);
+    // 模式3: "食材名 数字+单位" 松散匹配，也支持纯文字单位如"少许""适量"
+    const m3 = trimmed.match(/^(.+?)\s+((?:[\d.]+\s*)?(?:g|克|个|只|片|勺|茶匙|汤匙|ml|毫升|杯|块|根|颗|粒|张|条|适量|少许))/i)
+            || trimmed.match(/^(.+)(少许|适量)$/);
     if(m3){
       result.ingredients.push({name: m3[1].trim(), g: m3[2].trim()});
       continue;
@@ -1597,7 +1603,7 @@ function parseRecipeText(text){
   
   // 4. 步骤解析
   let stepsSection = '';
-  const stepsMatch = fullText.match(/(?:步骤|做法|制作|过程)[：:]*\s*([\s\S]*?)(?=(?:贴士|注意|小窍门|Tips|$))/i);
+  const stepsMatch = fullText.match(/(?:^|\n)\s*(?:步骤|做法|制作|过程|操作流程|[二三四五六七八九十]+[、.])\s*[：:]*\s*\n?([\s\S]*?)(?=(?:\n\s*(?:贴士|小贴士|注意|小窍门|Tips|$)))/i);
   if(stepsMatch){
     stepsSection = stepsMatch[1];
   } else {
@@ -1611,10 +1617,10 @@ function parseRecipeText(text){
   const stepLinesRaw = stepsSection.split(/\n/);
   const numberedSteps = [];
   for(const line of stepLinesRaw){
-    // 先拆分同行多个步骤
-    const parts = line.split(/(?=\d+[\.、．)])/).filter(s => s.trim());
+    // 先拆分同行多个步骤（行首的编号，排除"1.5"这类小数）
+    const parts = line.split(/(?:^|(?<=\s))(?=\d+[\.、．)](?!\d))/).filter(s => s.trim());
     for(const part of parts){
-      const m = part.trim().match(/^(\d+)[\.、．)]\s*(.+)/);
+      const m = part.trim().match(/^(\d+)[\.、．)](?!\d)\s*(.+)/);
       if(m){
         numberedSteps.push(m[2].trim());
       }
