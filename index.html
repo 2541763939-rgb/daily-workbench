@@ -420,6 +420,63 @@ body.dark .settings-hint{background:#2d1b2e;color:#ccc}
 .settings-upload:hover{border-color:var(--pink);color:var(--pink-dark)}
 .settings-upload input{display:none}
 
+/* 智能导入弹窗 */
+.import-modal{width:92%;max-width:520px}
+.import-step{display:none}
+.import-step.active{display:block}
+.import-tabs{display:flex;gap:0;margin-bottom:14px;border-radius:12px;overflow:hidden;border:1.5px solid var(--border)}
+.import-tab{
+  flex:1;padding:10px 14px;text-align:center;font-size:0.82rem;
+  cursor:pointer;background:var(--card);color:var(--text-sub);
+  border:none;transition:all 0.15s;font-family:inherit;
+}
+.import-tab+.import-tab{border-left:1.5px solid var(--border)}
+.import-tab.active{background:var(--pink);color:#fff;font-weight:600}
+.import-textarea{
+  width:100%;min-height:220px;padding:14px;border:1.5px solid var(--border);
+  border-radius:12px;font-size:0.85rem;font-family:inherit;line-height:1.7;
+  outline:none;resize:vertical;background:var(--card);color:var(--text);
+}
+.import-textarea:focus{border-color:var(--pink)}
+.import-textarea::placeholder{color:var(--text-light)}
+.import-dropzone{
+  border:2px dashed var(--border);border-radius:14px;
+  padding:40px 20px;text-align:center;cursor:pointer;
+  transition:all 0.2s;color:var(--text-sub);
+}
+.import-dropzone:hover,.import-dropzone.dragover{
+  border-color:var(--pink);background:var(--pink-light);
+}
+.import-dropzone input{display:none}
+.import-dropzone .dz-icon{font-size:2.5rem;margin-bottom:10px}
+.import-dropzone .dz-text{font-size:0.82rem}
+.import-dropzone .dz-hint{font-size:0.68rem;color:var(--text-light);margin-top:6px}
+.import-dropzone .dz-preview-img{
+  max-width:100%;max-height:200px;border-radius:10px;margin-top:10px;
+}
+.import-parse-btn{
+  width:100%;margin-top:12px;padding:12px;border:none;
+  border-radius:12px;background:var(--pink);color:#fff;
+  font-size:0.9rem;font-weight:600;cursor:pointer;
+}
+.import-parse-btn:hover{background:var(--pink-dark)}
+.import-parse-btn:disabled{opacity:0.5;cursor:not-allowed}
+.import-preview-section{margin-bottom:16px}
+.import-preview-title{
+  font-size:0.82rem;font-weight:600;color:var(--text);margin-bottom:6px;
+}
+.import-preview-box{
+  padding:10px 14px;background:#fafafa;border-radius:10px;
+  border:1px solid var(--border);font-size:0.78rem;
+  color:var(--text-sub);line-height:1.6;max-height:150px;overflow-y:auto;
+}
+body.dark .import-preview-box{background:#1a1a3e}
+.import-back-btn{
+  padding:8px 16px;border-radius:8px;font-size:0.8rem;
+  border:1px solid var(--border);background:var(--card);
+  color:var(--text);cursor:pointer;margin-right:auto;
+}
+
 /* 响应式 */
 @media(max-width:768px){
   .sidebar{transform:translateX(-100%);transition:transform 0.3s}
@@ -533,6 +590,7 @@ body.dark .settings-hint{background:#2d1b2e;color:#ccc}
       <input type="text" id="searchInput" placeholder="搜索配方 / 食材 / 步骤..." oninput="doSearch()">
     </div>
     <button class="toolbar-btn primary" onclick="showAddModal()">+ 新建</button>
+    <button class="toolbar-btn" onclick="showImportModal()">📥 导入</button>
     <button class="toolbar-btn" onclick="showFavorites()">⭐ 收藏</button>
     <button class="toolbar-btn" onclick="showShopping()">🛒 采购</button>
     <button class="toolbar-btn" onclick="toggleDark()">🌙</button>
@@ -667,6 +725,91 @@ body.dark .settings-hint{background:#2d1b2e;color:#ccc}
     <div class="modal-footer">
       <button class="modal-btn" onclick="closeSettings()">取消</button>
       <button class="modal-btn primary" onclick="saveSettings()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- 智能导入弹窗 -->
+<div class="modal-overlay" id="importOverlay" onclick="if(event.target===this)closeImportModal()">
+  <div class="modal import-modal">
+    <div class="modal-header">
+      <span class="modal-title" id="importTitle">📥 智能导入配方</span>
+      <button class="modal-close" onclick="closeImportModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <!-- 步骤1: 输入 -->
+      <div class="import-step active" id="importStep1">
+        <div class="import-tabs">
+          <button class="import-tab active" data-tab="text" onclick="switchImportTab('text')">📝 粘贴文字</button>
+          <button class="import-tab" data-tab="image" onclick="switchImportTab('image')">📷 上传截图</button>
+        </div>
+        <div id="importTextTab">
+          <textarea class="import-textarea" id="importText" placeholder="在此粘贴任意配方文字...&#10;&#10;示例：&#10;北海道戚风蛋糕&#10;材料：低筋面粉 100g，鸡蛋 4个，细砂糖 80g，牛奶 60g，玉米油 40g&#10;步骤：&#10;1. 蛋黄加糖打散，加入牛奶和油拌匀&#10;2. 筛入低粉搅拌至无颗粒&#10;3. 蛋白打发至硬性发泡&#10;4. 混合后倒入模具&#10;5. 160度烤35分钟&#10;贴士：蛋白盆必须无油无水"></textarea>
+          <button class="import-parse-btn" onclick="doParse()">🔍 智能解析</button>
+        </div>
+        <div id="importImageTab" style="display:none">
+          <label class="import-dropzone" id="importDropzone" ondrop="handleImportDrop(event)" ondragover="event.preventDefault();this.classList.add('dragover')" ondragleave="this.classList.remove('dragover')">
+            <div class="dz-icon">📷</div>
+            <div class="dz-text">点击或拖拽上传配方截图</div>
+            <div class="dz-hint">支持 JPG/PNG，上传后将自动解析</div>
+            <input type="file" accept="image/*" id="importImageInput" onchange="handleImportImage(event)">
+            <img id="importPreviewImg" style="display:none" class="dz-preview-img">
+          </label>
+          <div style="text-align:center;margin-top:10px;font-size:0.72rem;color:var(--text-sub)">截图上传后，请对照图片内容手动修正解析结果</div>
+        </div>
+      </div>
+      
+      <!-- 步骤2: 预览确认 -->
+      <div class="import-step" id="importStep2">
+        <div class="form-row">
+          <label>配方名称</label>
+          <input type="text" id="imName">
+        </div>
+        <div class="form-row">
+          <label>分类</label>
+          <select id="imCat">
+            <option>面包类</option><option>蛋糕类</option><option>饼干类</option>
+            <option>酥点类</option><option>中式烘焙类</option><option>夹心酱类</option><option>奶茶类</option>
+          </select>
+        </div>
+        <div style="display:flex;gap:8px">
+          <div class="form-row" style="flex:1"><label>温度</label><input type="text" id="imTemp"></div>
+          <div class="form-row" style="flex:1"><label>时间</label><input type="text" id="imTime"></div>
+          <div class="form-row" style="flex:1"><label>储存</label><input type="text" id="imStorage" value="常温"></div>
+        </div>
+        <div class="form-row">
+          <label>标签（逗号分隔）</label>
+          <input type="text" id="imTags">
+        </div>
+        <div class="form-row">
+          <label>小贴士</label>
+          <input type="text" id="imTips">
+        </div>
+        <div class="form-row">
+          <label>配料 <button onclick="addImIngRow()" style="font-size:0.7rem;padding:2px 8px">+</button></label>
+          <div id="imIngredients"></div>
+        </div>
+        <div class="form-row">
+          <label>步骤（每行一步）</label>
+          <textarea id="imSteps" rows="6"></textarea>
+        </div>
+        <div class="form-row">
+          <label>难度</label>
+          <select id="imDifficulty">
+            <option value="1">★☆☆☆☆</option><option value="2">★★☆☆☆</option>
+            <option value="3">★★★☆☆</option><option value="4">★★★★☆</option><option value="5">★★★★★</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer" id="importFooter1">
+      <button class="modal-btn" onclick="closeImportModal()">取消</button>
+      <button class="modal-btn primary" onclick="doParse()">🔍 智能解析</button>
+    </div>
+    <div class="modal-footer" id="importFooter2" style="display:none">
+      <button class="modal-btn import-back-btn" onclick="backToImport()">← 返回修改</button>
+      <button class="modal-btn" onclick="closeImportModal()">取消</button>
+      <button class="modal-btn primary" onclick="saveImportedRecipe()">💾 保存配方</button>
     </div>
   </div>
 </div>
@@ -1245,6 +1388,335 @@ function saveSettings(){
   applyAppSettings();
   closeSettings();
   showToast('已保存，刷新或重新添加主屏幕后生效');
+}
+
+// ==================== 智能导入 ====================
+function showImportModal(){
+  $('importOverlay').classList.add('show');
+  // 重置到步骤1
+  $('importStep1').classList.add('active');
+  $('importStep2').classList.remove('active');
+  $('importFooter1').style.display = '';
+  $('importFooter2').style.display = 'none';
+  $('importText').value = '';
+  $('importPreviewImg').style.display = 'none';
+  $('importPreviewImg').src = '';
+  $('importImageInput').value = '';
+  // 默认文字tab
+  switchImportTab('text');
+}
+
+function closeImportModal(){
+  $('importOverlay').classList.remove('show');
+}
+
+function switchImportTab(tab){
+  document.querySelectorAll('.import-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+  $('importTextTab').style.display = tab === 'text' ? '' : 'none';
+  $('importImageTab').style.display = tab === 'image' ? '' : 'none';
+}
+
+function handleImportDrop(e){
+  e.preventDefault();
+  $('importDropzone').classList.remove('dragover');
+  const file = e.dataTransfer.files[0];
+  if(file) readImportImage(file);
+}
+
+function handleImportImage(e){
+  const file = e.target.files[0];
+  if(file) readImportImage(file);
+}
+
+function readImportImage(file){
+  if(!file.type.startsWith('image/')){ showToast('请上传图片文件'); return; }
+  if(file.size > 5*1024*1024){ showToast('图片太大，请选择小于 5MB 的图片'); return; }
+  const reader = new FileReader();
+  reader.onload = ev => {
+    $('importPreviewImg').src = ev.target.result;
+    $('importPreviewImg').style.display = '';
+    // 提示用户手动输入
+    showToast('截图已加载，请在文字框中输入配方内容后解析');
+    switchImportTab('text');
+  };
+  reader.readAsDataURL(file);
+}
+
+// ===== 配方文本解析引擎 =====
+function parseRecipeText(text){
+  if(!text || !text.trim()) return null;
+  const lines = text.split(/\n/).map(l => l.trim()).filter(l => l);
+  if(lines.length === 0) return null;
+  
+  // 结果容器
+  const result = {
+    name: '',
+    cat: '面包类',
+    ingredients: [],
+    steps: [],
+    tips: '',
+    tags: [],
+    temp: '',
+    time: '',
+    storage: '常温',
+    difficulty: 2
+  };
+  
+  // 1. 提取名称：第一行或"配方名：xxx"
+  const nameMatch = text.match(/(?:配方名|名称|菜名)[：:]\s*(.+)/i);
+  if(nameMatch){
+    result.name = nameMatch[1].trim();
+  } else {
+    // 取第一个非空短行（<25字且不含数字和"材料"/"步骤"等关键词）
+    for(const l of lines){
+      if(l.length < 25 && !/^(材料|食材|配料|步骤|做法|制作|准备|工具)/.test(l) && !/^\d+[\.、．]/.test(l)){
+        result.name = l.replace(/^[#\-\*\s]+/, '').trim();
+        break;
+      }
+    }
+  }
+  
+  // 合并文本用于全文匹配
+  const fullText = lines.join('\n');
+  
+  // 2. 分类识别
+  const catRules = [
+    {keys: ['奶茶','果茶','奶盖','拿铁','咖啡','柠檬茶','乌龙茶','绿茶','红茶','抹茶','椰奶','杨枝甘露','多肉','芝芝','波波','芋泥波波','黑糖珍珠'], cat: '奶茶类'},
+    {keys: ['酱','馅','奶油馅','卡仕达','奶黄','豆沙','果酱','抹酱','柠檬酱'], cat: '夹心酱类'},
+    {keys: ['月饼','馒头','包子','花卷','发糕','蒸饺','年糕','粽子','青团','米糕'], cat: '中式烘焙类'},
+    {keys: ['酥','塔','派','可颂','丹麦','蝴蝶酥','蛋黄酥','老婆饼','蛋挞','拿破仑','牛角','千层酥'], cat: '酥点类'},
+    {keys: ['饼干','曲奇','薄脆','瓦片','手指饼','马卡龙','司康'], cat: '饼干类'},
+    {keys: ['蛋糕','戚风','慕斯','海绵','芝士蛋糕','磅蛋糕','马芬','杯子蛋糕','瑞士卷','古早','提拉米苏'], cat: '蛋糕类'},
+    {keys: ['面包','吐司','贝果','欧包','餐包','法棍','布里欧修','碱水','佛卡夏','披萨'], cat: '面包类'},
+  ];
+  const lowerName = result.name.toLowerCase();
+  const lowerText = fullText.toLowerCase();
+  for(const rule of catRules){
+    if(rule.keys.some(k => lowerName.includes(k) || lowerText.includes(k))){
+      result.cat = rule.cat;
+      break;
+    }
+  }
+  
+  // 3. 食材解析
+  // 先找到"材料/食材/配料"区域
+  let ingSection = '';
+  const ingMatch = fullText.match(/(?:材料|食材|配料|原料)[：:]*\s*([\s\S]*?)(?=(?:步骤|做法|制作|过程|工艺|贴士|注意|小窍门|Tips|$))/i);
+  if(ingMatch){
+    ingSection = ingMatch[1];
+  } else {
+    // 无材料标记：排除有步骤编号的行
+    ingSection = lines.filter(l => !/^\d+[\.、．)]/.test(l)).join('\n');
+  }
+  
+  // 逐行解析食材
+  const ingLines = ingSection.split(/\n/);
+  for(const line of ingLines){
+    const trimmed = line.replace(/^[\-\*•\s]+/, '').trim();
+    if(!trimmed || trimmed.length < 2) continue;
+    if(/^(步骤|做法|制作|贴士|注意|小窍门|Tips)/i.test(trimmed)) break;
+    
+    // 先尝试逗号分隔拆分行（同行多食材）
+    const segments = trimmed.split(/[，,]/);
+    if(segments.length > 1){
+      let parsedAny = false;
+      for(const seg of segments){
+        const s = seg.trim();
+        if(!s) continue;
+        // 对每个分段用模式1匹配
+        const sm1 = s.match(/^(.+?)\s+([\d.]+(?:\s*[g克G][\s]*|个|只|片|勺|茶匙|汤匙|适量|少许|ml|ML毫升|杯|块|根|颗|粒|张|条|把|滴|小勺|大勺|克))$/);
+        const sm2 = s.match(/^(.+?)\s+(\d+[\d.]*\s*(?:g|克|个|只|片|勺|茶匙|汤匙|ml|毫升|杯|块|根|颗|粒|张|条|适量|少许))/i);
+        const sm = sm1 || sm2;
+        if(sm){
+          result.ingredients.push({name: sm[1].trim(), g: sm[2].trim()});
+          parsedAny = true;
+        }
+      }
+      if(parsedAny) continue;
+    }
+    
+    // 模式1: "食材名 克重" 如 "高筋面粉 250g"
+    const m1 = trimmed.match(/^(.+?)\s+([\d.]+(?:\s*[g克G][\s]*|个|只|片|勺|茶匙|汤匙|适量|少许|ml|ML毫升|杯|块|根|颗|粒|张|条|把|滴|小勺|大勺|克))$/);
+    if(m1){
+      result.ingredients.push({name: m1[1].trim(), g: m1[2].trim()});
+      continue;
+    }
+    
+    // 模式2: "食材名：克重" 或 "食材名:克重"
+    const m2 = trimmed.match(/^(.+?)[：:]\s*([\d.]+.+)$/);
+    if(m2 && /[\dg克G个只片勺].*/.test(m2[2])){
+      result.ingredients.push({name: m2[1].trim(), g: m2[2].trim()});
+      continue;
+    }
+    
+    // 模式3: "食材名 数字+单位" 松散匹配
+    const m3 = trimmed.match(/^(.+?)\s+(\d+[\d.]*\s*(?:g|克|个|只|片|勺|茶匙|汤匙|ml|毫升|杯|块|根|颗|粒|张|条|适量|少许))/i);
+    if(m3){
+      result.ingredients.push({name: m3[1].trim(), g: m3[2].trim()});
+      continue;
+    }
+  }
+  
+  // 4. 步骤解析
+  let stepsSection = '';
+  const stepsMatch = fullText.match(/(?:步骤|做法|制作|过程)[：:]*\s*([\s\S]*?)(?=(?:贴士|注意|小窍门|Tips|$))/i);
+  if(stepsMatch){
+    stepsSection = stepsMatch[1];
+  } else {
+    // 无步骤标记：取所有带编号的行，排除食材行
+    const stepLines = lines.filter(l => /^\d+[\.、．)]/.test(l));
+    if(stepLines.length > 0) stepsSection = stepLines.join('\n');
+    else stepsSection = fullText;
+  }
+  
+  // 尝试匹配编号步骤（支持同行多个步骤："1. xxx 2. xxx 3. xxx"）
+  const stepLinesRaw = stepsSection.split(/\n/);
+  const numberedSteps = [];
+  for(const line of stepLinesRaw){
+    // 先拆分同行多个步骤
+    const parts = line.split(/(?=\d+[\.、．)])/).filter(s => s.trim());
+    for(const part of parts){
+      const m = part.trim().match(/^(\d+)[\.、．)]\s*(.+)/);
+      if(m){
+        numberedSteps.push(m[2].trim());
+      }
+    }
+  }
+  if(numberedSteps.length > 0){
+    result.steps = numberedSteps.filter(s => s.length > 1);
+  } else {
+    // 无编号，按换行拆分
+    const stepLines = stepLinesRaw.map(s => s.replace(/^[\-\*•\s]+/, '').trim()).filter(s => s.length > 2);
+    if(stepLines.length > 0) result.steps = stepLines;
+  }
+  
+  // 5. 贴士提取
+  const tipsMatch = fullText.match(/(?:贴士|小贴士|注意|小窍门|Tips|窍门)[：:]*\s*([\s\S]*)/i);
+  if(tipsMatch){
+    result.tips = tipsMatch[1].trim().split(/\n/)[0].trim();
+  }
+  
+  // 6. 标签检测
+  const tagRules = ['低糖','无水','开酥','戚风','常温','冷藏','中秋月饼','蒸制'];
+  result.tags = tagRules.filter(t => fullText.includes(t));
+  
+  // 7. 温度提取
+  const tempMatch = fullText.match(/(\d{2,3}\s*°[Cc]\s*(?:[/~]\s*\d{2,3}\s*°[Cc])?)/);
+  if(tempMatch) result.temp = tempMatch[1].replace(/\s+/g, '');
+  
+  // 8. 时间提取
+  const timeMatch = fullText.match(/(\d+)\s*(分钟|分|min|小时|h)/i);
+  if(timeMatch) result.time = timeMatch[1] + (timeMatch[2] === '小时' || timeMatch[2] === 'h' ? '小时' : '分钟');
+  
+  // 9. 储存
+  if(/冷藏|冰箱|保鲜/.test(fullText)) result.storage = '冷藏';
+  else if(/冷冻/.test(fullText)) result.storage = '冷冻';
+  
+  // 10. 难度推算
+  if(result.steps.length <= 3) result.difficulty = 1;
+  else if(result.steps.length <= 6) result.difficulty = 2;
+  else if(result.steps.length <= 10) result.difficulty = 3;
+  else result.difficulty = 4;
+  
+  return result;
+}
+
+function doParse(){
+  const text = $('importText').value.trim();
+  if(!text){ showToast('请先粘贴配方文字'); return; }
+  
+  const result = parseRecipeText(text);
+  if(!result || (result.ingredients.length === 0 && result.steps.length === 0)){
+    showToast('未能识别配方内容，请检查格式后重试');
+    return;
+  }
+  
+  // 填充预览表单
+  $('imName').value = result.name || '未命名配方';
+  $('imCat').value = result.cat;
+  $('imTemp').value = result.temp;
+  $('imTime').value = result.time;
+  $('imStorage').value = result.storage;
+  $('imTags').value = result.tags.join(',');
+  $('imTips').value = result.tips;
+  $('imSteps').value = result.steps.join('\n');
+  $('imDifficulty').value = result.difficulty;
+  
+  // 填充配料表
+  $('imIngredients').innerHTML = '';
+  if(result.ingredients.length > 0){
+    result.ingredients.forEach(ing => {
+      const div = document.createElement('div');
+      div.className = 'ingredient-row';
+      div.innerHTML = `<input value="${ing.name}"><input class="g-input" value="${ing.g}">`;
+      $('imIngredients').appendChild(div);
+    });
+  } else {
+    addImIngRow();
+  }
+  
+  // 切换到步骤2
+  $('importStep1').classList.remove('active');
+  $('importStep2').classList.add('active');
+  $('importFooter1').style.display = 'none';
+  $('importFooter2').style.display = '';
+  $('importTitle').textContent = '📥 确认导入 - ' + (result.name || '配方');
+  
+  showToast('解析完成，请核对后保存');
+}
+
+function addImIngRow(){
+  const div = document.createElement('div');
+  div.className = 'ingredient-row';
+  div.innerHTML = '<input placeholder="原料名"><input class="g-input" placeholder="克重">';
+  $('imIngredients').appendChild(div);
+}
+
+function backToImport(){
+  $('importStep1').classList.add('active');
+  $('importStep2').classList.remove('active');
+  $('importFooter1').style.display = '';
+  $('importFooter2').style.display = 'none';
+  $('importTitle').textContent = '📥 智能导入配方';
+}
+
+function saveImportedRecipe(){
+  const name = $('imName').value.trim();
+  if(!name){ showToast('请填写配方名称'); return; }
+  
+  const ingredients = [];
+  document.querySelectorAll('#imIngredients .ingredient-row').forEach(row => {
+    const inputs = row.querySelectorAll('input');
+    if(inputs[0].value.trim()){
+      ingredients.push({name: inputs[0].value.trim(), g: inputs[1].value.trim() || '适量'});
+    }
+  });
+  
+  const recipe = {
+    name: name,
+    cat: $('imCat').value,
+    tags: $('imTags').value.split(',').map(t => t.trim()).filter(t => t),
+    temp: $('imTemp').value.trim(),
+    time: $('imTime').value.trim(),
+    storage: $('imStorage').value.trim() || '常温',
+    difficulty: parseInt($('imDifficulty').value) || 2,
+    tips: $('imTips').value.trim(),
+    ingredients: ingredients,
+    steps: $('imSteps').value.split('\n').map(s => s.trim()).filter(s => s),
+    id: 1000 + customRecipes.length + 1
+  };
+  
+  // 避免ID冲突
+  while(customRecipes.some(r => r.id === recipe.id)) recipe.id++;
+  
+  customRecipes.push(recipe);
+  localStorage.setItem('customRecipes', JSON.stringify(customRecipes));
+  scaleMap[recipe.id] = 1;
+  
+  closeImportModal();
+  updateCustomCount();
+  renderRecipes();
+  showToast('导入成功！已归档到「' + recipe.cat + '」');
 }
 
 function showToast(msg){
