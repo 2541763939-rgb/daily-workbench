@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>烘焙工作台</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#fff0f3;--sidebar:#fff5f7;--card:#fff;--border:#ffd6e0;
+  --pink:#ff8fa3;--pink-dark:#e85d75;--pink-light:#ffe4e9;
+  --text:#4a4a4a;--text-sub:#888;--text-light:#aaa;
+  --green:#7dd3a8;--blue:#7ec8e3;--orange:#f5b971;--purple:#c9a0dc;
+  --yellow:#ffeaa7;--shadow:0 2px 8px rgba(255,143,163,0.08);
+  --sidebar-w:220px;
+}
+html{font-size:16px}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+  background:var(--bg);color:var(--text);line-height:1.5;min-height:100vh;
+}
+
+/* 夜间模式 */
+body.dark{
+  --bg:#1a1a2e;--sidebar:#16213e;--card:#0f3460;--border:#1a1a2e;
+  --text:#e0e0e0;--text-sub:#999;--pink:#ff6b8a;--pink-dark:#ff8fa3;
+  --pink-light:#2d1b2e;
+}
+
+/* ===== 侧边栏 ===== */
+.sidebar{
+  position:fixed;left:0;top:0;bottom:0;width:var(--sidebar-w);
+  background:var(--sidebar);border-right:1px solid var(--border);
+  z-index:300;overflow-y:auto;display:flex;flex-direction:column;
+}
+.sidebar-header{
+  padding:16px 14px 10px;border-bottom:1px solid var(--border);
+}
+.sidebar-logo{display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.sidebar-logo .logo-icon{font-size:1.6rem}
+.sidebar-logo .logo-text{font-size:1.1rem;font-weight:700;color:var(--pink-dark)}
+.sidebar-sub{font-size:0.65rem;color:var(--text-sub);margin-bottom:12px}
+
+/* 分类列表 */
+.cat-list{padding:4px 0}
+.cat-item{
+  display:flex;align-items:center;gap:8px;
+  padding:8px 14px;margin:2px 8px;border-radius:10px;
+  cursor:pointer;transition:all 0.15s;font-size:0.82rem;
+}
+.cat-item:hover{background:var(--pink-light)}
+.cat-item.active{background:var(--pink);color:#fff}
+.cat-item .cat-icon{font-size:1.1rem;width:22px;text-align:center}
+.cat-item .cat-name{flex:1}
+.cat-item .cat-count{
+  font-size:0.65rem;background:rgba(0,0,0,0.08);
+  padding:1px 7px;border-radius:8px;
+}
+.cat-item.active .cat-count{background:rgba(255,255,255,0.3)}
+
+/* 标签筛选 */
+.tag-section{padding:10px 14px;border-top:1px solid var(--border)}
+.tag-section-title{font-size:0.72rem;color:var(--text-sub);margin-bottom:8px;font-weight:600}
+.tag-list{display:flex;flex-wrap:wrap;gap:5px}
+.tag-item{
+  padding:3px 10px;border-radius:12px;font-size:0.68rem;
+  background:#f0f0f0;color:var(--text-sub);cursor:pointer;
+  border:1px solid transparent;transition:all 0.15s;
+}
+body.dark .tag-item{background:#1a1a3e}
+.tag-item:hover{border-color:var(--pink)}
+.tag-item.active{background:var(--pink-light);color:var(--pink-dark);border-color:var(--pink)}
+
+/* 底部统计 */
+.sidebar-footer{
+  margin-top:auto;padding:10px 14px;border-top:1px solid var(--border);
+  font-size:0.65rem;color:var(--text-sub);
+}
+
+/* ===== 主内容区 ===== */
+.main{margin-left:var(--sidebar-w);min-height:100vh}
+
+/* 顶部工具栏 */
+.toolbar{
+  display:flex;align-items:center;gap:8px;
+  padding:12px 16px;background:var(--bg);border-bottom:1px solid var(--border);
+  position:sticky;top:0;z-index:100;
+}
+.search-box{
+  flex:1;display:flex;align-items:center;gap:6px;
+  background:var(--card);border:1px solid var(--border);
+  border-radius:20px;padding:6px 14px;
+}
+.search-box input{
+  border:none;outline:none;background:transparent;
+  font-size:0.8rem;color:var(--text);width:100%;
+}
+.search-box input::placeholder{color:var(--text-light)}
+
+.toolbar-btn{
+  display:flex;align-items:center;gap:4px;
+  padding:6px 12px;border:1px solid var(--border);
+  border-radius:20px;background:var(--card);color:var(--text);
+  font-size:0.75rem;cursor:pointer;transition:all 0.15s;white-space:nowrap;
+}
+.toolbar-btn:hover{border-color:var(--pink);color:var(--pink-dark)}
+.toolbar-btn.primary{background:var(--pink);color:#fff;border-color:var(--pink)}
+.toolbar-btn.primary:hover{background:var(--pink-dark)}
+
+/* 内容区 */
+.content{padding:16px 20px 40px}
+.content-header{display:flex;align-items:baseline;gap:10px;margin-bottom:16px}
+.content-title{font-size:1.2rem;font-weight:700;color:var(--text)}
+.content-count{font-size:0.75rem;color:var(--text-sub)}
+
+/* 原料反查 */
+.ingredient-check{
+  display:flex;align-items:center;gap:8px;margin-bottom:14px;
+  padding:10px 14px;background:var(--card);border-radius:12px;
+  box-shadow:var(--shadow);
+}
+.ingredient-check label{font-size:0.78rem;color:var(--text-sub);white-space:nowrap}
+.ingredient-check input{
+  flex:1;padding:6px 10px;border:1px solid var(--border);
+  border-radius:8px;font-size:0.78rem;outline:none;background:transparent;color:var(--text);
+}
+.ingredient-check input:focus{border-color:var(--pink)}
+.ing-check-btn{
+  padding:5px 12px;border:1px solid var(--border);border-radius:8px;
+  background:var(--card);font-size:0.72rem;cursor:pointer;color:var(--text);
+}
+.ing-check-btn:hover{border-color:var(--pink);color:var(--pink-dark)}
+
+/* 标签筛选条 */
+.filter-bar{
+  display:flex;gap:6px;margin-bottom:16px;overflow-x:auto;padding-bottom:4px;
+}
+.filter-bar::-webkit-scrollbar{height:3px}
+.filter-bar::-webkit-scrollbar-thumb{background:var(--pink);border-radius:2px}
+.filter-tag{
+  padding:5px 14px;border-radius:16px;font-size:0.75rem;
+  background:var(--card);border:1px solid var(--border);
+  color:var(--text-sub);cursor:pointer;white-space:nowrap;transition:all 0.15s;
+}
+.filter-tag:hover{border-color:var(--pink)}
+.filter-tag.active{background:var(--pink);color:#fff;border-color:var(--pink)}
+.filter-tag.clear{color:var(--pink-dark);border-color:var(--pink)}
+
+/* 配方卡片 */
+.recipe-card{
+  background:var(--card);border-radius:16px;
+  margin-bottom:14px;box-shadow:var(--shadow);
+  border:1px solid var(--border);overflow:hidden;
+}
+.rc-header{
+  display:flex;align-items:center;gap:8px;
+  padding:12px 16px 8px;
+}
+.rc-cat-tag{
+  font-size:0.62rem;padding:2px 8px;border-radius:6px;
+  background:var(--pink-light);color:var(--pink-dark);font-weight:600;
+}
+.rc-name{font-size:1rem;font-weight:700;flex:1}
+.rc-stars{color:#ffd700;font-size:0.85rem}
+.rc-actions{display:flex;gap:4px}
+.rc-action{
+  width:28px;height:28px;border-radius:6px;
+  border:1px solid var(--border);background:transparent;
+  display:flex;align-items:center;justify-content:center;
+  font-size:0.85rem;cursor:pointer;color:var(--text-sub);
+}
+.rc-action:hover{border-color:var(--pink);color:var(--pink-dark)}
+.rc-action.fav{color:var(--pink)}
+
+/* 信息标签 */
+.rc-info{
+  display:flex;gap:8px;padding:0 16px 10px;flex-wrap:wrap;
+}
+.info-tag{
+  display:flex;align-items:center;gap:3px;
+  padding:3px 10px;border-radius:10px;font-size:0.72rem;font-weight:600;
+}
+.info-tag.temp{background:#fff3e0;color:#e65100}
+.info-tag.time{background:#e3f2fd;color:#1565c0}
+.info-tag.storage{background:#f3e5f5;color:#7b1fa2}
+
+/* 提示 */
+.rc-tips{
+  margin:0 16px 10px;padding:8px 12px;
+  background:#fff8e1;border-radius:8px;
+  font-size:0.75rem;color:#8d6e63;display:flex;gap:6px;
+  align-items:flex-start;
+}
+.rc-tips .tip-icon{font-size:1rem;flex-shrink:0}
+
+/* 倍率换算 */
+.rc-scale{
+  display:flex;align-items:center;gap:6px;
+  padding:0 16px 10px;flex-wrap:wrap;
+}
+.scale-label{font-size:0.72rem;color:var(--text-sub);white-space:nowrap}
+.scale-btn{
+  padding:4px 12px;border-radius:14px;font-size:0.75rem;
+  border:1px solid var(--border);background:var(--card);
+  cursor:pointer;color:var(--text);transition:all 0.15s;
+}
+.scale-btn:hover{border-color:var(--pink)}
+.scale-btn.active{background:var(--green);color:#fff;border-color:var(--green)}
+.scale-input{
+  width:50px;padding:4px 8px;border:1px solid var(--border);
+  border-radius:8px;font-size:0.75rem;text-align:center;outline:none;background:transparent;color:var(--text);
+}
+.scale-input:focus{border-color:var(--pink)}
+
+/* 配料网格 */
+.rc-ingredients{
+  padding:0 16px 12px;
+}
+.ing-grid{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:8px;
+}
+.ing-item{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:6px 10px;background:var(--bg);border-radius:8px;
+}
+.ing-name{font-size:0.75rem;color:var(--text)}
+.ing-weight{font-size:0.75rem;color:var(--pink-dark);font-weight:600}
+
+/* 步骤 */
+.rc-steps{
+  padding:0 16px 12px;
+}
+.rc-steps-title{font-size:0.8rem;font-weight:600;color:var(--pink-dark);margin-bottom:6px}
+.step-item{
+  display:flex;gap:8px;padding:5px 0;font-size:0.75rem;
+  border-bottom:1px dashed #f0f0f0;
+}
+.step-num{
+  width:20px;height:20px;border-radius:50%;
+  background:var(--pink-light);color:var(--pink-dark);
+  display:flex;align-items:center;justify-content:center;
+  font-size:0.65rem;font-weight:600;flex-shrink:0;
+}
+.step-text{flex:1;color:var(--text);line-height:1.5}
+
+/* 底部操作 */
+.rc-footer{
+  display:flex;justify-content:flex-end;padding:8px 16px;
+  border-top:1px solid var(--border);gap:6px;
+}
+.rc-footer-btn{
+  padding:5px 12px;border-radius:10px;font-size:0.72rem;
+  border:1px solid var(--border);background:transparent;
+  cursor:pointer;color:var(--text-sub);display:flex;align-items:center;gap:3px;
+}
+.rc-footer-btn:hover{border-color:var(--pink);color:var(--pink-dark)}
+
+/* 空状态 */
+.empty-state{text-align:center;padding:60px 20px;color:var(--text-sub);font-size:0.85rem}
+
+/* 弹窗 */
+.modal-overlay{
+  display:none;position:fixed;top:0;left:0;right:0;bottom:0;
+  background:rgba(0,0,0,0.4);z-index:500;align-items:center;justify-content:center;
+}
+.modal-overlay.show{display:flex}
+.modal{
+  background:var(--card);border-radius:16px;width:90%;max-width:500px;
+  max-height:85vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,0.15);
+}
+.modal-header{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:14px 18px;border-bottom:1px solid var(--border);
+}
+.modal-title{font-size:1rem;font-weight:700}
+.modal-close{
+  width:28px;height:28px;border-radius:50%;border:none;
+  background:var(--bg);font-size:1.1rem;cursor:pointer;color:var(--text-sub);
+}
+.modal-body{padding:16px 18px}
+.form-row{margin-bottom:12px}
+.form-row label{display:block;font-size:0.75rem;color:var(--text-sub);margin-bottom:4px}
+.form-row input,.form-row select,.form-row textarea{
+  width:100%;padding:8px 10px;border:1px solid var(--border);
+  border-radius:8px;font-size:0.8rem;outline:none;background:transparent;color:var(--text);font-family:inherit;
+}
+.form-row input:focus,.form-row textarea:focus{border-color:var(--pink)}
+.form-row textarea{resize:vertical;min-height:60px}
+.ingredient-row{display:flex;gap:6px;margin-bottom:6px}
+.ingredient-row input{flex:1}
+.ingredient-row input.g-input{width:70px;flex:none}
+.modal-footer{
+  display:flex;gap:8px;padding:12px 18px;border-top:1px solid var(--border);justify-content:flex-end;
+}
+.modal-btn{padding:8px 18px;border-radius:8px;font-size:0.8rem;cursor:pointer;border:1px solid var(--border);background:var(--card);color:var(--text)}
+.modal-btn.primary{background:var(--pink);color:#fff;border-color:var(--pink)}
+
+/* 移动端菜单 */
+.mobile-menu-btn{
+  display:none;position:fixed;top:12px;left:12px;z-index:400;
+  width:40px;height:40px;border-radius:10px;
+  background:var(--card);border:1px solid var(--border);
+  font-size:1.2rem;cursor:pointer;align-items:center;justify-content:center;
+  box-shadow:var(--shadow);
+}
+
+/* 响应式 */
+@media(max-width:768px){
+  .sidebar{transform:translateX(-100%);transition:transform 0.3s}
+  .sidebar.open{transform:translateX(0)}
+  .main{margin-left:0}
+  .mobile-menu-btn{display:flex}
+  .toolbar{padding:10px;gap:4px;flex-wrap:wrap}
+  .toolbar-btn{padding:5px 8px;font-size:0.7rem}
+  .content{padding:12px}
+  .ing-grid{grid-template-columns:repeat(2,1fr)}
+}
+
+/* 滚动条 */
+.sidebar::-webkit-scrollbar{width:4px}
+.sidebar::-webkit-scrollbar-thumb{background:var(--pink);border-radius:2px}
+</style>
+</head>
+<body>
+
+<button class="mobile-menu-btn" onclick="toggleSidebar()">☰</button>
+
+<!-- 侧边栏 -->
+<div class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-logo">
+      <span class="logo-icon">🍰</span>
+      <span class="logo-text">烘焙工作台</span>
+    </div>
+    <div class="sidebar-sub">配方 · 步骤 · 成本 · 计时</div>
+  </div>
+
+  <div class="cat-list" id="catList">
+    <div class="cat-item active" data-cat="全部配方" onclick="filterCat('全部配方')">
+      <span class="cat-icon">🍰</span>
+      <span class="cat-name">全部配方</span>
+      <span class="cat-count">37</span>
+    </div>
+    <div class="cat-item " data-cat="面包类" onclick="filterCat('面包类')">
+      <span class="cat-icon">🍞</span>
+      <span class="cat-name">面包类</span>
+      <span class="cat-count">6</span>
+    </div>
+    <div class="cat-item " data-cat="蛋糕类" onclick="filterCat('蛋糕类')">
+      <span class="cat-icon">🎂</span>
+      <span class="cat-name">蛋糕类</span>
+      <span class="cat-count">7</span>
+    </div>
+    <div class="cat-item " data-cat="饼干类" onclick="filterCat('饼干类')">
+      <span class="cat-icon">🍪</span>
+      <span class="cat-name">饼干类</span>
+      <span class="cat-count">8</span>
+    </div>
+    <div class="cat-item " data-cat="酥点类" onclick="filterCat('酥点类')">
+      <span class="cat-icon">🥮</span>
+      <span class="cat-name">酥点类</span>
+      <span class="cat-count">8</span>
+    </div>
+    <div class="cat-item " data-cat="中式烘焙类" onclick="filterCat('中式烘焙类')">
+      <span class="cat-icon">🥟</span>
+      <span class="cat-name">中式烘焙类</span>
+      <span class="cat-count">4</span>
+    </div>
+    <div class="cat-item " data-cat="夹心酱类" onclick="filterCat('夹心酱类')">
+      <span class="cat-icon">🍯</span>
+      <span class="cat-name">夹心酱类</span>
+      <span class="cat-count">4</span>
+    </div>
+    <div class="cat-item " data-cat="奶茶类" onclick="filterCat('奶茶类')">
+      <span class="cat-icon">🧋</span>
+      <span class="cat-name">奶茶类</span>
+      <span class="cat-count">8</span>
+    </div>
+  </div>
+
+  <div class="tag-section">
+    <div class="tag-section-title">标签筛选</div>
+    <div class="tag-list" id="tagList">
+      <span class="tag-item" data-tag="低糖" onclick="toggleTag('低糖')">低糖</span>
+      <span class="tag-item" data-tag="无水" onclick="toggleTag('无水')">无水</span>
+      <span class="tag-item" data-tag="开酥" onclick="toggleTag('开酥')">开酥</span>
+      <span class="tag-item" data-tag="戚风" onclick="toggleTag('戚风')">戚风</span>
+      <span class="tag-item" data-tag="常温" onclick="toggleTag('常温')">常温</span>
+      <span class="tag-item" data-tag="冷藏" onclick="toggleTag('冷藏')">冷藏</span>
+      <span class="tag-item" data-tag="中秋月饼" onclick="toggleTag('中秋月饼')">中秋月饼</span>
+      <span class="tag-item" data-tag="蒸制" onclick="toggleTag('蒸制')">蒸制</span>
+    </div>
+  </div>
+
+  <div class="sidebar-footer">
+    内置 45 · 自定义 <span id="customCount">0</span>
+  </div>
+</div>
+
+<!-- 主内容区 -->
+<div class="main">
+  <!-- 工具栏 -->
+  <div class="toolbar">
+    <div class="search-box">
+      <span>🔍</span>
+      <input type="text" id="searchInput" placeholder="搜索配方 / 食材 / 步骤..." oninput="doSearch()">
+    </div>
+    <button class="toolbar-btn primary" onclick="showAddModal()">+ 新建</button>
+    <button class="toolbar-btn" onclick="showFavorites()">⭐ 收藏</button>
+    <button class="toolbar-btn" onclick="showShopping()">🛒 采购</button>
+    <button class="toolbar-btn" onclick="toggleDark()">🌙</button>
+    <button class="toolbar-btn" onclick="fontSize(-1)">A-</button>
+    <button class="toolbar-btn" onclick="fontSize(1)">A+</button>
+  </div>
+
+  <!-- 内容区 -->
+  <div class="content">
+    <div class="content-header">
+      <span class="content-title" id="contentTitle">全部配方</span>
+      <span class="content-count" id="contentCount">共 37 个配方</span>
+    </div>
+
+    <!-- 原料反查 -->
+    <div class="ingredient-check">
+      <label>原料反查：</label>
+      <input type="text" id="ingCheckInput" placeholder="输入原料名，如低筋面粉 / 黄油">
+      <button class="ing-check-btn" onclick="doIngCheck()">含</button>
+      <button class="ing-check-btn" onclick="clearIngCheck()">清除</button>
+    </div>
+
+    <!-- 标签筛选条 -->
+    <div class="filter-bar" id="filterBar">
+      <span class="filter-tag" data-ftag="低糖" onclick="toggleFilterTag('低糖')">低糖</span>
+      <span class="filter-tag" data-ftag="无水" onclick="toggleFilterTag('无水')">无水</span>
+      <span class="filter-tag" data-ftag="开酥" onclick="toggleFilterTag('开酥')">开酥</span>
+      <span class="filter-tag" data-ftag="戚风" onclick="toggleFilterTag('戚风')">戚风</span>
+      <span class="filter-tag" data-ftag="常温" onclick="toggleFilterTag('常温')">常温</span>
+      <span class="filter-tag" data-ftag="冷藏" onclick="toggleFilterTag('冷藏')">冷藏</span>
+      <span class="filter-tag" data-ftag="中秋月饼" onclick="toggleFilterTag('中秋月饼')">中秋月饼</span>
+      <span class="filter-tag" data-ftag="蒸制" onclick="toggleFilterTag('蒸制')">蒸制</span>
+      <span class="filter-tag clear" onclick="clearAllTags()">清空筛选</span>
+    </div>
+
+    <!-- 配方列表 -->
+    <div id="recipeList"></div>
+  </div>
+</div>
+
+<!-- 新建/编辑弹窗 -->
+<div class="modal-overlay" id="modalOverlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="modalTitle">新建配方</span>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <label>配方名称</label>
+        <input type="text" id="mName" placeholder="如：原味吐司">
+      </div>
+      <div class="form-row">
+        <label>分类</label>
+        <select id="mCat">
+          <option>面包类</option><option>蛋糕类</option><option>饼干类</option>
+          <option>酥点类</option><option>中式烘焙类</option><option>夹心酱类</option><option>奶茶类</option>
+        </select>
+      </div>
+      <div class="form-row" style="display:flex;gap:8px">
+        <div style="flex:1"><label>温度</label><input type="text" id="mTemp" placeholder="180°C/180°C"></div>
+        <div style="flex:1"><label>时间</label><input type="text" id="mTime" placeholder="35分钟"></div>
+        <div style="flex:1"><label>储存</label><input type="text" id="mStorage" placeholder="常温"></div>
+      </div>
+      <div class="form-row">
+        <label>标签（逗号分隔）</label>
+        <input type="text" id="mTags" placeholder="低糖,常温,戚风">
+      </div>
+      <div class="form-row">
+        <label>小贴士</label>
+        <input type="text" id="mTips" placeholder="制作要点">
+      </div>
+      <div class="form-row">
+        <label>配料 <button onclick="addIngRow()" style="font-size:0.7rem;padding:2px 8px">+</button></label>
+        <div id="mIngredients"></div>
+      </div>
+      <div class="form-row">
+        <label>步骤（每行一步）</label>
+        <textarea id="mSteps" placeholder="1. 准备材料
+2. 混合搅拌
+3. ..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="modal-btn" onclick="closeModal()">取消</button>
+      <button class="modal-btn primary" onclick="saveRecipe()">保存</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ==================== 数据 ====================
+const recipes = [{"id": 1, "name": "原味吐司", "cat": "面包类", "tags": ["常温"], "temp": "180°C/180°C", "time": "35分钟", "storage": "常温", "difficulty": 2, "tips": "面团揉到完全扩展，二发至8分满再烤", "ingredients": [{"name": "高筋粉", "g": "250g"}, {"name": "牛奶", "g": "130g"}, {"name": "鸡蛋", "g": "1个"}, {"name": "酵母", "g": "3g"}, {"name": "糖", "g": "30g"}, {"name": "盐", "g": "3g"}, {"name": "黄油", "g": "25g"}], "steps": ["除黄油外所有材料揉至扩展", "加入黄油揉至完全扩展", "一次发酵至2倍大", "分割滚圆醒15分钟", "擀卷入吐司盒", "二发至8分满", "180度烤35分钟"]}, {"id": 2, "name": "全麦贝果", "cat": "面包类", "tags": ["低糖", "常温"], "temp": "220°C/220°C", "time": "15分钟", "storage": "常温", "difficulty": 3, "tips": "煮贝果水加蜂蜜上色更好，每面30秒", "ingredients": [{"name": "高筋粉", "g": "150g"}, {"name": "全麦粉", "g": "150g"}, {"name": "水", "g": "180g"}, {"name": "酵母", "g": "3g"}, {"name": "糖", "g": "10g"}, {"name": "盐", "g": "4g"}, {"name": "蜂蜜(煮水)", "g": "30g"}], "steps": ["所有材料揉至扩展", "发酵1小时", "分割6份滚圆醒20分钟", "整形为环形", "二发30分钟", "煮水每面30秒", "220度烤15分钟"]}, {"id": 3, "name": "软欧包", "cat": "面包类", "tags": ["低糖", "常温"], "temp": "190°C/190°C", "time": "22分钟", "storage": "常温", "difficulty": 3, "tips": "果干最后加入避免打碎，核桃提前烤香", "ingredients": [{"name": "高筋粉", "g": "250g"}, {"name": "全麦粉", "g": "50g"}, {"name": "水", "g": "200g"}, {"name": "酵母", "g": "3g"}, {"name": "糖", "g": "20g"}, {"name": "盐", "g": "4g"}, {"name": "黄油", "g": "15g"}, {"name": "蔓越莓", "g": "50g"}, {"name": "核桃", "g": "30g"}], "steps": ["除果干外揉至扩展", "加入果干低速搅匀", "发酵1小时", "分割2份松15分钟", "整形卷起", "二发40分钟", "撒粉割包", "190度烤22分钟"]}, {"id": 4, "name": "海盐卷", "cat": "面包类", "tags": ["开酥", "常温"], "temp": "180°C/180°C", "time": "18分钟", "storage": "常温", "difficulty": 4, "tips": "黄油片要软硬适中，折叠时保持低温", "ingredients": [{"name": "高筋粉", "g": "200g"}, {"name": "低筋粉", "g": "50g"}, {"name": "水", "g": "130g"}, {"name": "酵母", "g": "3g"}, {"name": "糖", "g": "20g"}, {"name": "盐", "g": "4g"}, {"name": "黄油(面团)", "g": "20g"}, {"name": "黄油(裹入)", "g": "100g"}, {"name": "海盐", "g": "适量"}], "steps": ["面团揉至扩展冷藏1小时", "黄油片擀成薄片", "面团包黄油三折两次", "冷藏松弛30分钟", "擀开切三角", "卷起发酵", "表面撒海盐", "180度烤18分钟"]}, {"id": 5, "name": "奶油包", "cat": "面包类", "tags": ["常温"], "temp": "170°C/170°C", "time": "15分钟", "storage": "冷藏", "difficulty": 2, "tips": "面包完全冷却后再挤奶油，奶油打至硬性", "ingredients": [{"name": "高筋粉", "g": "250g"}, {"name": "牛奶", "g": "120g"}, {"name": "鸡蛋", "g": "1个"}, {"name": "酵母", "g": "3g"}, {"name": "糖", "g": "40g"}, {"name": "盐", "g": "3g"}, {"name": "黄油", "g": "30g"}, {"name": "淡奶油", "g": "200g"}, {"name": "糖(奶油)", "g": "20g"}], "steps": ["面团揉至扩展发酵1小时", "分割8份滚圆", "二发40分钟", "170度烤15分钟", "淡奶油加糖打发", "面包冷却后挤入奶油"]}, {"id": 6, "name": "免揉欧包", "cat": "面包类", "tags": ["低糖", "无水", "常温"], "temp": "230°C/230°C", "time": "25分钟", "storage": "常温", "difficulty": 2, "tips": "冷藏发酵12-17小时最佳，烤时喷水制造蒸汽", "ingredients": [{"name": "高筋粉", "g": "300g"}, {"name": "水", "g": "230g"}, {"name": "酵母", "g": "2g"}, {"name": "盐", "g": "6g"}], "steps": ["所有材料搅匀成团", "冷藏发酵12-17小时", "取出折叠整形", "二发1小时", "表面撒粉割包", "230度烤25分钟带蒸汽"]}, {"id": 7, "name": "海绵蛋糕", "cat": "蛋糕类", "tags": ["常温", "戚风"], "temp": "160°C/160°C", "time": "18分钟", "storage": "常温", "difficulty": 2, "tips": "功率大则时间短，注意观察上色", "ingredients": [{"name": "鸡蛋", "g": "8个"}, {"name": "白糖", "g": "150g"}, {"name": "盐", "g": "2g"}, {"name": "蛋糕油", "g": "20g"}, {"name": "低筋粉", "g": "200g"}, {"name": "泡打粉", "g": "4g"}, {"name": "玉米淀粉", "g": "20g"}, {"name": "水", "g": "60g"}, {"name": "油", "g": "75g"}], "steps": ["鸡蛋加糖打发至浓稠", "筛入粉类拌匀", "加入水和油", "倒入模具", "160度烤18分钟"]}, {"id": 8, "name": "戚风蛋糕", "cat": "蛋糕类", "tags": ["戚风", "常温"], "temp": "150°C/150°C", "time": "50分钟", "storage": "常温", "difficulty": 3, "tips": "蛋白打至干性发泡，翻拌不要消泡", "ingredients": [{"name": "鸡蛋", "g": "5个"}, {"name": "低筋粉", "g": "85g"}, {"name": "牛奶", "g": "50g"}, {"name": "玉米油", "g": "40g"}, {"name": "糖(蛋黄)", "g": "20g"}, {"name": "糖(蛋白)", "g": "60g"}, {"name": "柠檬汁", "g": "几滴"}], "steps": ["蛋黄加糖奶油画拌匀", "筛入低粉", "蛋白加糖打至干性", "翻拌均匀", "倒入模具震气泡", "150度烤50分钟", "倒扣冷却脱模"]}, {"id": 9, "name": "芝士蛋糕", "cat": "蛋糕类", "tags": ["冷藏"], "temp": "160°C/160°C", "time": "60分钟", "storage": "冷藏", "difficulty": 3, "tips": "水浴法烤制，冷藏4小时以上口感最佳", "ingredients": [{"name": "奶油奶酪", "g": "250g"}, {"name": "细砂糖", "g": "70g"}, {"name": "鸡蛋", "g": "3个"}, {"name": "酸奶", "g": "100g"}, {"name": "淡奶油", "g": "100g"}, {"name": "玉米淀粉", "g": "15g"}, {"name": "柠檬汁", "g": "10g"}], "steps": ["奶油奶酪软化加糖打顺滑", "分次加鸡蛋搅匀", "加入酸奶淡奶油", "筛入淀粉", "倒入模具水浴", "160度烤60分钟", "冷藏4小时"]}, {"id": 10, "name": "抹茶蛋糕卷", "cat": "蛋糕类", "tags": ["常温"], "temp": "160°C/160°C", "time": "25分钟", "storage": "冷藏", "difficulty": 3, "tips": "烤好后趁热卷定型，奶油打硬一点", "ingredients": [{"name": "鸡蛋", "g": "4个"}, {"name": "低筋粉", "g": "60g"}, {"name": "抹茶粉", "g": "8g"}, {"name": "牛奶", "g": "50g"}, {"name": "玉米油", "g": "40g"}, {"name": "糖", "g": "50g"}, {"name": "淡奶油", "g": "200g"}, {"name": "糖(奶油)", "g": "15g"}], "steps": ["蛋黄加油奶抹茶粉拌匀", "筛入低粉", "蛋白加糖打至湿性", "翻拌倒入烤盘", "160度烤25分钟", "淡奶油加糖打发", "蛋糕趁热卷起定型"]}, {"id": 11, "name": "巧克力慕斯", "cat": "蛋糕类", "tags": ["冷藏"], "temp": "", "time": "4小时", "storage": "冷藏", "difficulty": 3, "tips": "吉利丁片先用冰水泡软，巧克力温度不要太高", "ingredients": [{"name": "黑巧克力", "g": "150g"}, {"name": "淡奶油", "g": "300g"}, {"name": "牛奶", "g": "100g"}, {"name": "吉利丁片", "g": "10g"}, {"name": "糖", "g": "30g"}, {"name": "蛋黄", "g": "2个"}], "steps": ["吉利丁冰水泡软", "巧克力牛奶隔水融化", "加入蛋黄和吉利丁", "淡奶油加糖打至6分发", "混合倒入模具", "冷藏4小时"]}, {"id": 12, "name": "红丝绒蛋糕", "cat": "蛋糕类", "tags": ["常温"], "temp": "170°C/170°C", "time": "30分钟", "storage": "冷藏", "difficulty": 4, "tips": "红曲粉用量决定颜色深浅，奶油奶酪霜要室温软化", "ingredients": [{"name": "低筋粉", "g": "150g"}, {"name": "红曲粉", "g": "10g"}, {"name": "可可粉", "g": "5g"}, {"name": "黄油", "g": "60g"}, {"name": "糖", "g": "100g"}, {"name": "鸡蛋", "g": "2个"}, {"name": "酸奶", "g": "120g"}, {"name": "泡打粉", "g": "3g"}], "steps": ["黄油加糖打发", "分次加鸡蛋", "加入酸奶", "筛入粉类", "倒入模具", "170度烤30分钟", "奶油奶酪霜装饰"]}, {"id": 13, "name": "巴斯克芝士", "cat": "蛋糕类", "tags": ["冷藏"], "temp": "220°C/220°C", "time": "25分钟", "storage": "冷藏", "difficulty": 1, "tips": "表面烤焦是特色，冷藏过夜口感最佳", "ingredients": [{"name": "奶油奶酪", "g": "350g"}, {"name": "细砂糖", "g": "80g"}, {"name": "鸡蛋", "g": "3个"}, {"name": "蛋黄", "g": "2个"}, {"name": "淡奶油", "g": "180g"}, {"name": "低筋粉", "g": "10g"}], "steps": ["奶油奶酪软化加糖", "分次加鸡蛋和蛋黄", "加入淡奶油", "筛入低粉", "倒入模具", "220度烤25分钟至表面焦黑", "冷藏过夜"]}, {"id": 14, "name": "黄油曲奇", "cat": "饼干类", "tags": ["常温"], "temp": "165°C/165°C", "time": "18分钟", "storage": "常温", "difficulty": 1, "tips": "黄油软化到手指可按压，不要过度打发", "ingredients": [{"name": "黄油", "g": "100g"}, {"name": "糖粉", "g": "50g"}, {"name": "低筋粉", "g": "150g"}, {"name": "蛋黄", "g": "1个"}, {"name": "盐", "g": "1g"}], "steps": ["黄油软化加糖粉打发", "加入蛋黄", "筛入低粉拌匀", "挤花或切片", "165度烤18分钟"]}, {"id": 15, "name": "蔓越莓饼干", "cat": "饼干类", "tags": ["低糖", "常温"], "temp": "165°C/165°C", "time": "20分钟", "storage": "常温", "difficulty": 1, "tips": "面团冷冻1小时再切，切厚一点口感好", "ingredients": [{"name": "黄油", "g": "75g"}, {"name": "糖粉", "g": "40g"}, {"name": "低筋粉", "g": "115g"}, {"name": "蛋液", "g": "15g"}, {"name": "蔓越莓干", "g": "40g"}], "steps": ["黄油软化加糖粉", "加入蛋液", "筛入低粉", "加入切碎蔓越莓", "整形冷冻1小时", "切片165度烤20分钟"]}, {"id": 16, "name": "抹茶曲奇", "cat": "饼干类", "tags": ["常温"], "temp": "165°C/165°C", "time": "18分钟", "storage": "常温", "difficulty": 2, "tips": "抹茶粉过筛2次，避免绿色颗粒", "ingredients": [{"name": "黄油", "g": "100g"}, {"name": "糖粉", "g": "50g"}, {"name": "低筋粉", "g": "145g"}, {"name": "抹茶粉", "g": "5g"}, {"name": "蛋黄", "g": "1个"}], "steps": ["黄油软化加糖粉打发", "加入蛋黄", "筛入低粉和抹茶粉", "拌匀挤花", "165度烤18分钟"]}, {"id": 17, "name": "杏仁瓦片", "cat": "饼干类", "tags": ["低糖", "常温"], "temp": "160°C/160°C", "time": "12分钟", "storage": "常温", "difficulty": 2, "tips": "面糊摊薄一点更脆，边缘上色即可", "ingredients": [{"name": "杏仁片", "g": "100g"}, {"name": "蛋白", "g": "80g"}, {"name": "糖粉", "g": "40g"}, {"name": "低筋粉", "g": "20g"}, {"name": "黄油", "g": "30g"}], "steps": ["蛋白加糖粉打匀", "筛入低粉", "加入融化黄油", "拌入杏仁片", "摊薄", "160度烤12分钟"]}, {"id": 18, "name": "巧克力豆曲奇", "cat": "饼干类", "tags": ["常温"], "temp": "175°C/175°C", "time": "12分钟", "storage": "常温", "difficulty": 1, "tips": "巧克力豆用耐烤型，面团不要过度搅拌", "ingredients": [{"name": "黄油", "g": "100g"}, {"name": "红糖", "g": "40g"}, {"name": "白糖", "g": "30g"}, {"name": "鸡蛋", "g": "1个"}, {"name": "低筋粉", "g": "160g"}, {"name": "小苏打", "g": "2g"}, {"name": "巧克力豆", "g": "80g"}], "steps": ["黄油加糖打发", "加入鸡蛋", "筛入粉类", "加入巧克力豆", "分成小球", "175度烤12分钟"]}, {"id": 19, "name": "芝麻薄脆", "cat": "饼干类", "tags": ["低糖", "常温"], "temp": "160°C/160°C", "time": "15分钟", "storage": "常温", "difficulty": 1, "tips": "面糊摊得越薄越脆，黑白芝麻混合更香", "ingredients": [{"name": "蛋白", "g": "80g"}, {"name": "糖粉", "g": "30g"}, {"name": "低筋粉", "g": "30g"}, {"name": "玉米油", "g": "30g"}, {"name": "黑芝麻", "g": "20g"}, {"name": "白芝麻", "g": "20g"}], "steps": ["蛋白加糖粉搅匀", "筛入低粉", "加入油和芝麻", "摊薄", "160度烤15分钟"]}, {"id": 20, "name": "椰蓉球", "cat": "饼干类", "tags": ["低糖", "常温"], "temp": "160°C/160°C", "time": "20分钟", "storage": "常温", "difficulty": 1, "tips": "椰蓉用全脂的更香，面团稍干更好整形", "ingredients": [{"name": "椰蓉", "g": "100g"}, {"name": "黄油", "g": "50g"}, {"name": "糖粉", "g": "30g"}, {"name": "蛋黄", "g": "2个"}, {"name": "低筋粉", "g": "30g"}, {"name": "牛奶", "g": "20g"}], "steps": ["黄油软化加糖粉", "加入蛋黄", "筛入低粉", "加入椰蓉和牛奶", "搓成小球", "160度烤20分钟"]}, {"id": 21, "name": "伯爵茶饼干", "cat": "饼干类", "tags": ["常温"], "temp": "165°C/165°C", "time": "18分钟", "storage": "常温", "difficulty": 2, "tips": "伯爵茶包拆开用茶叶末，茶香更浓", "ingredients": [{"name": "黄油", "g": "100g"}, {"name": "糖粉", "g": "45g"}, {"name": "低筋粉", "g": "150g"}, {"name": "蛋黄", "g": "1个"}, {"name": "伯爵茶包", "g": "2包"}], "steps": ["黄油软化加糖粉", "加入蛋黄", "筛入低粉", "加入茶末", "整形冷冻", "切片165度烤18分钟"]}, {"id": 22, "name": "蛋黄酥", "cat": "酥点类", "tags": ["开酥", "中秋月饼"], "temp": "180°C/180°C", "time": "30分钟", "storage": "常温", "difficulty": 4, "tips": "油皮油酥软硬度要一致，擀卷不要破酥", "ingredients": [{"name": "中筋粉(油皮)", "g": "150g"}, {"name": "猪油(油皮)", "g": "50g"}, {"name": "水(油皮)", "g": "60g"}, {"name": "糖(油皮)", "g": "20g"}, {"name": "低筋粉(油酥)", "g": "120g"}, {"name": "猪油(油酥)", "g": "60g"}, {"name": "咸蛋黄", "g": "16个"}, {"name": "红豆沙", "g": "400g"}], "steps": ["油皮揉至扩展醒30分钟", "油酥拌匀", "包酥擀卷两次", "豆沙包蛋黄", "酥皮包馅", "刷蛋黄撒芝麻", "180度烤30分钟"]}, {"id": 23, "name": "老婆饼", "cat": "酥点类", "tags": ["开酥", "常温"], "temp": "180°C/180°C", "time": "25分钟", "storage": "常温", "difficulty": 3, "tips": "馅料炒干一点，饼皮擀薄", "ingredients": [{"name": "中筋粉(油皮)", "g": "200g"}, {"name": "猪油(油皮)", "g": "60g"}, {"name": "水(油皮)", "g": "80g"}, {"name": "糖(油皮)", "g": "30g"}, {"name": "低筋粉(油酥)", "g": "160g"}, {"name": "猪油(油酥)", "g": "80g"}, {"name": "冬瓜蓉", "g": "200g"}, {"name": "糖冬瓜", "g": "100g"}, {"name": "芝麻", "g": "30g"}, {"name": "椰蓉", "g": "30g"}], "steps": ["油皮油酥分别做好", "包酥擀卷", "馅料拌匀", "包馅压扁", "表面划三刀", "刷蛋液撒芝麻", "180度烤25分钟"]}, {"id": 24, "name": "凤梨酥", "cat": "酥点类", "tags": ["常温"], "temp": "165°C/165°C", "time": "18分钟", "storage": "常温", "difficulty": 3, "tips": "馅料炒到抱团不粘手，皮馅比例1:1", "ingredients": [{"name": "低筋粉", "g": "150g"}, {"name": "杏仁粉", "g": "50g"}, {"name": "黄油", "g": "100g"}, {"name": "糖粉", "g": "30g"}, {"name": "蛋黄", "g": "2个"}, {"name": "凤梨", "g": "500g"}, {"name": "麦芽糖", "g": "50g"}, {"name": "糖(馅)", "g": "60g"}], "steps": ["凤梨切碎炒干加麦芽糖", "黄油加糖粉打发", "加入蛋黄", "筛入粉类", "皮馅各分20g", "包入模具", "165度烤18分钟"]}, {"id": 25, "name": "核桃酥", "cat": "酥点类", "tags": ["低糖", "常温"], "temp": "170°C/170°C", "time": "18分钟", "storage": "常温", "difficulty": 1, "tips": "用猪油更酥，面团不要过度揉", "ingredients": [{"name": "低筋粉", "g": "200g"}, {"name": "猪油", "g": "100g"}, {"name": "糖粉", "g": "60g"}, {"name": "蛋液", "g": "30g"}, {"name": "泡打粉", "g": "3g"}, {"name": "小苏打", "g": "1g"}, {"name": "核桃碎", "g": "60g"}], "steps": ["猪油加糖粉打发", "加入蛋液", "筛入粉类", "加入核桃碎", "分成小球压扁", "中间按凹撒芝麻", "170度烤18分钟"]}, {"id": 26, "name": "绿豆糕", "cat": "酥点类", "tags": ["低糖", "常温"], "temp": "", "time": "", "storage": "冷藏", "difficulty": 2, "tips": "绿豆要蒸透，炒馅要炒干不粘手", "ingredients": [{"name": "去皮绿豆", "g": "200g"}, {"name": "黄油", "g": "40g"}, {"name": "糖", "g": "50g"}, {"name": "麦芽糖", "g": "30g"}, {"name": "牛奶", "g": "50g"}], "steps": ["绿豆浸泡4小时", "蒸熟", "加黄油糖牛奶打匀", "炒至不粘手", "分份入模具压成型", "冷藏"]}, {"id": 27, "name": "荷花酥", "cat": "酥点类", "tags": ["开酥", "常温"], "temp": "160°C/160°C", "time": "20分钟", "storage": "常温", "difficulty": 5, "tips": "刀口要割到馅心但别割断，油温控制", "ingredients": [{"name": "中筋粉(油皮)", "g": "100g"}, {"name": "猪油(油皮)", "g": "30g"}, {"name": "水(油皮)", "g": "40g"}, {"name": "低筋粉(油酥白)", "g": "50g"}, {"name": "猪油(油酥白)", "g": "25g"}, {"name": "低筋粉(油酥红)", "g": "50g"}, {"name": "猪油(油酥红)", "g": "25g"}, {"name": "红曲粉", "g": "2g"}, {"name": "椰蓉馅", "g": "150g"}], "steps": ["油皮油酥分别做好", "红色油酥包入白色油酥", "擀卷包馅", "顶部割六瓣", "160度烤20分钟"]}, {"id": 28, "name": "桃酥", "cat": "酥点类", "tags": ["低糖", "常温"], "temp": "170°C/170°C", "time": "18分钟", "storage": "常温", "difficulty": 1, "tips": "传统桃酥用臭粉更酥，家庭版用小苏打替代", "ingredients": [{"name": "低筋粉", "g": "250g"}, {"name": "猪油", "g": "120g"}, {"name": "糖粉", "g": "80g"}, {"name": "蛋液", "g": "40g"}, {"name": "泡打粉", "g": "3g"}, {"name": "小苏打", "g": "2g"}], "steps": ["猪油加糖粉打发", "加入蛋液", "筛入粉类", "分成小球压扁", "中间按凹", "170度烤18分钟"]}, {"id": 29, "name": "千层酥", "cat": "酥点类", "tags": ["开酥", "常温"], "temp": "200°C/200°C", "time": "25分钟", "storage": "常温", "difficulty": 5, "tips": "折叠次数越多层次越多，每次折叠后冷藏松弛", "ingredients": [{"name": "中筋粉", "g": "200g"}, {"name": "水", "g": "100g"}, {"name": "盐", "g": "3g"}, {"name": "黄油(面团)", "g": "20g"}, {"name": "黄油(裹入)", "g": "150g"}], "steps": ["面团揉好冷藏", "黄油片擀薄", "包入面团", "三折冷藏", "重复4次", "擀薄切块", "200度烤25分钟"]}, {"id": 30, "name": "广式月饼", "cat": "中式烘焙类", "tags": ["中秋月饼", "常温"], "temp": "200°C/200°C", "time": "20分钟", "storage": "常温", "difficulty": 3, "tips": "饼皮醒面2小时，蛋液薄薄刷一层", "ingredients": [{"name": "中筋粉", "g": "160g"}, {"name": "转化糖浆", "g": "110g"}, {"name": "花生油", "g": "50g"}, {"name": "枧水", "g": "4g"}, {"name": "咸蛋黄", "g": "12个"}, {"name": "莲蓉馅", "g": "600g"}], "steps": ["糖浆加油和枧水搅匀", "筛入面粉醒2小时", "蛋黄喷酒烤5分钟", "莲蓉包蛋黄", "皮包馅", "压模", "200度烤5分钟刷蛋液", "再烤15分钟"]}, {"id": 31, "name": "冰皮月饼", "cat": "中式烘焙类", "tags": ["中秋月饼", "冷藏"], "temp": "", "time": "", "storage": "冷藏", "difficulty": 2, "tips": "冰皮蒸好后趁热揉油，冷藏后口感更好", "ingredients": [{"name": "糯米粉", "g": "50g"}, {"name": "粘米粉", "g": "40g"}, {"name": "澄粉", "g": "30g"}, {"name": "糖粉", "g": "40g"}, {"name": "牛奶", "g": "180g"}, {"name": "玉米油", "g": "20g"}, {"name": "奶黄馅", "g": "300g"}], "steps": ["所有粉类加糖奶油搅匀", "过筛蒸20分钟", "趁热揉入油", "冷藏1小时", "分皮馅各25g", "包入模具压成型"]}, {"id": 32, "name": "马拉糕", "cat": "中式烘焙类", "tags": ["蒸制", "常温"], "temp": "", "time": "30分钟", "storage": "常温", "difficulty": 2, "tips": "发酵要充分才有大气孔，大火蒸", "ingredients": [{"name": "低筋粉", "g": "150g"}, {"name": "木薯粉", "g": "100g"}, {"name": "红糖", "g": "80g"}, {"name": "水", "g": "200g"}, {"name": "酵母", "g": "3g"}, {"name": "泡打粉", "g": "3g"}, {"name": "玉米油", "g": "15g"}], "steps": ["红糖加水融化", "加入粉类和酵母", "发酵至2倍大", "加入泡打粉和油", "倒入模具", "大火蒸30分钟"]}, {"id": 33, "name": "发糕", "cat": "中式烘焙类", "tags": ["蒸制", "常温"], "temp": "", "time": "25分钟", "storage": "常温", "difficulty": 1, "tips": "面糊稠度像酸奶，发酵到表面有气泡", "ingredients": [{"name": "中筋粉", "g": "200g"}, {"name": "温水", "g": "180g"}, {"name": "糖", "g": "50g"}, {"name": "酵母", "g": "3g"}, {"name": "泡打粉", "g": "2g"}], "steps": ["温水加糖酵母化开", "加入粉类搅匀", "倒入模具发酵", "表面有气泡", "大火蒸25分钟"]}, {"id": 34, "name": "卡仕达酱", "cat": "夹心酱类", "tags": ["冷藏"], "temp": "", "time": "", "storage": "冷藏", "difficulty": 2, "tips": "加热要不停搅拌防止结块，冷藏后更浓稠", "ingredients": [{"name": "牛奶", "g": "250g"}, {"name": "蛋黄", "g": "3个"}, {"name": "糖", "g": "50g"}, {"name": "低筋粉", "g": "20g"}, {"name": "玉米淀粉", "g": "10g"}, {"name": "黄油", "g": "15g"}, {"name": "香草精", "g": "几滴"}], "steps": ["蛋黄加糖打匀", "筛入粉类", "牛奶加热", "慢慢倒入蛋黄液", "回锅加热搅拌", "加入黄油和香草精", "冷藏"]}, {"id": 35, "name": "奶油奶酪霜", "cat": "夹心酱类", "tags": ["冷藏"], "temp": "", "time": "", "storage": "冷藏", "difficulty": 2, "tips": "奶油奶酪要室温软化，打至顺滑无颗粒", "ingredients": [{"name": "奶油奶酪", "g": "200g"}, {"name": "黄油", "g": "100g"}, {"name": "糖粉", "g": "80g"}, {"name": "淡奶油", "g": "50g"}, {"name": "柠檬汁", "g": "10g"}], "steps": ["奶油奶酪软化", "黄油软化", "一起打至顺滑", "加入糖粉", "加入淡奶油和柠檬汁", "打至蓬松"]}, {"id": 36, "name": "巧克力甘纳许", "cat": "夹心酱类", "tags": ["冷藏"], "temp": "", "time": "", "storage": "冷藏", "difficulty": 1, "tips": "淡奶油加热到微沸即可，不要煮沸", "ingredients": [{"name": "黑巧克力", "g": "150g"}, {"name": "淡奶油", "g": "150g"}, {"name": "黄油", "g": "20g"}], "steps": ["淡奶油加热至微沸", "倒入巧克力静置2分钟", "搅拌至顺滑", "加入黄油", "冷藏至所需稠度"]}, {"id": 37, "name": "柠檬凝乳", "cat": "夹心酱类", "tags": ["低糖", "冷藏"], "temp": "", "time": "", "storage": "冷藏", "difficulty": 2, "tips": "隔水加热防止蛋花，冷藏后变浓稠", "ingredients": [{"name": "鸡蛋", "g": "3个"}, {"name": "糖", "g": "100g"}, {"name": "柠檬汁", "g": "80g"}, {"name": "柠檬皮屑", "g": "1个"}, {"name": "黄油", "g": "50g"}], "steps": ["鸡蛋加糖打匀", "加入柠檬汁和皮屑", "隔水加热搅拌", "变稠后加入黄油", "过筛", "冷藏"]}, {"id": 38, "name": "泰式罐罐奶茶（奶红/奶绿）", "cat": "奶茶类", "tags": ["冷藏"], "temp": "", "time": "5分钟", "storage": "冷藏", "difficulty": 1, "tips": "冰块和果糖根据个人口味微调，冰块多味道淡，冰块少奶味茶味重", "ingredients": [{"name": "泰式红茶/绿茶", "g": "20g"}, {"name": "开水", "g": "300g"}, {"name": "炼乳", "g": "100g"}, {"name": "牛奶", "g": "50g"}, {"name": "黑白淡奶", "g": "130g"}, {"name": "果糖", "g": "25-35g"}, {"name": "冰块", "g": "400-500g"}], "steps": ["量杯中加入茶叶，冲入85度以上开水，加盖焖泡5分钟", "过滤出茶汤，拉茶5-10次", "加入炼乳、牛奶、黑白淡奶、果糖，搅拌均匀", "加入冰块即可", "灌装时让冰块稍微融化一点再灌装"]}, {"id": 39, "name": "泰式罐罐奶茶（奶蓝/奶粉）", "cat": "奶茶类", "tags": ["冷藏"], "temp": "", "time": "5分钟", "storage": "冷藏", "difficulty": 1, "tips": "冰块和果糖根据个人口味微调，冰块多味道淡，冰块少奶味茶味重", "ingredients": [{"name": "泰式玫瑰/茉莉花茶", "g": "20g"}, {"name": "开水", "g": "300g"}, {"name": "炼乳", "g": "100g"}, {"name": "牛奶", "g": "50g"}, {"name": "黑白淡奶", "g": "130g"}, {"name": "果糖", "g": "25-35g"}, {"name": "冰块", "g": "400-500g"}], "steps": ["量杯中加入茶叶，冲入85度以上开水，加盖焖泡1分钟", "过滤出茶汤，拉茶5-10次", "加入炼乳、牛奶、黑白淡奶、果糖，搅拌均匀", "加入冰块即可", "灌装时让冰块稍微融化一点再灌装"]}, {"id": 40, "name": "自制芝士酪乳", "cat": "奶茶类", "tags": ["冷藏"], "temp": "", "time": "", "storage": "冷藏", "difficulty": 2, "tips": "奶油奶酪室温软化，打至顺滑无颗粒", "ingredients": [{"name": "奶油奶酪", "g": "55g"}, {"name": "炼乳", "g": "65g"}, {"name": "海盐", "g": "1g"}, {"name": "淡奶油", "g": "180g"}, {"name": "牛奶", "g": "50g"}], "steps": ["奶油奶酪室温软化，打至顺滑", "加入海盐打匀", "加入剩余材料打至酸奶状备用即可"]}, {"id": 41, "name": "可可咸法酪", "cat": "奶茶类", "tags": ["冷藏"], "temp": "", "time": "", "storage": "冷藏", "difficulty": 2, "tips": "视频用1000ml杯，700ml杯配比除以1.333，500ml杯除以2。制作好3小时内饮用完毕", "ingredients": [{"name": "可可粉", "g": "13g"}, {"name": "牛奶", "g": "60g"}, {"name": "55%黑巧克力", "g": "20g"}, {"name": "果糖", "g": "50g"}, {"name": "炼乳", "g": "10g"}, {"name": "牛奶", "g": "250g"}, {"name": "黑糖珍珠", "g": "110g"}, {"name": "芝士酪乳", "g": "100g"}, {"name": "冰块", "g": "300g"}], "steps": ["融化锅中加入可可粉、牛奶、黑巧克力、果糖、炼乳，隔水搅拌至完全融化", "加入牛奶搅拌均匀，可可奶制作完成", "1000ml杯底加入黑糖珍珠、芝士酪乳、冰块，可可奶倒满杯即可"]}, {"id": 42, "name": "莓果咸法酪", "cat": "奶茶类", "tags": ["冷藏"], "temp": "", "time": "", "storage": "冷藏", "difficulty": 2, "tips": "视频用1000ml杯，700ml杯配比除以1.333，500ml杯除以2。制作好2小时内饮用完毕。蓝莓果酱可替换草莓果酱", "ingredients": [{"name": "蓝莓", "g": "80g"}, {"name": "蓝莓果酱", "g": "80g"}, {"name": "果糖", "g": "40g"}, {"name": "炼乳", "g": "10g"}, {"name": "冰块", "g": "50g"}, {"name": "牛奶", "g": "160g"}, {"name": "黑糖珍珠", "g": "110g"}, {"name": "芝士酪乳", "g": "100g"}, {"name": "冰块", "g": "300g"}], "steps": ["破壁机中加入莓果奶所有材料搅打至均匀细腻备用", "1000ml杯底加入黑糖珍珠、芝士酪乳、冰块，莓果奶倒满杯即可", "自制蓝莓果酱：蓝莓500g+细砂糖100g+柠檬汁16g，熬至浓稠"]}, {"id": 43, "name": "泰式红茶/绿茶咸法酪", "cat": "奶茶类", "tags": ["冷藏"], "temp": "", "time": "8分钟", "storage": "冷藏", "difficulty": 2, "tips": "视频用1000ml杯，700ml杯配比除以1.333，500ml杯除以2。制作好3小时内饮用完毕", "ingredients": [{"name": "泰式红茶/绿茶", "g": "25g"}, {"name": "开水", "g": "500g"}, {"name": "冰块", "g": "250g"}, {"name": "三花全脂淡奶", "g": "42g"}, {"name": "炼乳", "g": "67g"}, {"name": "维益咖啡奶", "g": "55g"}, {"name": "果糖", "g": "20-35g"}, {"name": "黑糖珍珠", "g": "110g"}, {"name": "芝士酪乳", "g": "100g"}, {"name": "冰块", "g": "300g"}], "steps": ["量杯中加入茶叶，冲入85度以上开水，盖盖焖泡5-8分钟", "泡好后过滤出茶汤，进行拉茶5-10次", "加入冰块搅拌至冰块融化", "加入三花淡奶、炼乳、咖啡奶、果糖搅拌均匀备用", "1000ml杯底加入黑糖珍珠、芝士酪乳、冰块，红茶/绿茶奶茶倒满杯即可"]}, {"id": 44, "name": "泰蓝茉莉/泰粉玫瑰咸法酪", "cat": "奶茶类", "tags": ["冷藏"], "temp": "", "time": "5分钟", "storage": "冷藏", "difficulty": 2, "tips": "视频用1000ml杯，700ml杯配比除以1.333，500ml杯除以2。制作好3小时内饮用完毕", "ingredients": [{"name": "泰式玫瑰/茉莉花茶", "g": "25g"}, {"name": "开水", "g": "500g"}, {"name": "冰块", "g": "250g"}, {"name": "三花全脂淡奶", "g": "42g"}, {"name": "炼乳", "g": "67g"}, {"name": "维益咖啡奶", "g": "55g"}, {"name": "果糖", "g": "20-30g"}, {"name": "黑糖珍珠", "g": "110g"}, {"name": "芝士酪乳", "g": "100g"}, {"name": "冰块", "g": "300g"}], "steps": ["量杯中加入茶叶，冲入85度以上开水，盖盖焖泡5分钟", "泡好后过滤出茶汤，进行拉茶5-10次", "加入冰块搅拌至冰块融化", "加入三花淡奶、炼乳、咖啡奶、果糖搅拌均匀备用", "1000ml杯底加入黑糖珍珠、芝士酪乳、冰块，泰蓝/泰粉奶茶倒满杯即可"]}, {"id": 45, "name": "黑珍珠的煮法", "cat": "奶茶类", "tags": ["常温"], "temp": "", "time": "60分钟", "storage": "常温", "difficulty": 1, "tips": "煮珍珠水要足，搅拌防止粘底，焖透才能Q弹", "ingredients": [{"name": "水", "g": "适量"}, {"name": "珍珠", "g": "500g"}, {"name": "黑糖糖浆", "g": "100g"}], "steps": ["锅中加入足量的水，煮开后加入珍珠，用刮刀搅拌至锅底，搅动至珍珠浮起来", "盖上盖子熬煮30分钟", "时间到后关火焖30分钟", "焖好后纯净水洗一下过滤出来，加入黑糖糖浆搅拌均匀备用"]}];
+const cats = [{"key": "全部配方", "icon": "🍰", "count": 45}, {"key": "面包类", "icon": "🍞", "count": 6}, {"key": "蛋糕类", "icon": "🎂", "count": 7}, {"key": "饼干类", "icon": "🍪", "count": 8}, {"key": "酥点类", "icon": "🥮", "count": 8}, {"key": "中式烘焙类", "icon": "🥟", "count": 4}, {"key": "夹心酱类", "icon": "🍯", "count": 4}, {"key": "奶茶类", "icon": "🧋", "count": 8}];
+const allTags = ["低糖", "无水", "开酥", "戚风", "常温", "冷藏", "中秋月饼", "蒸制"];
+let customRecipes = [];
+try{ customRecipes = JSON.parse(localStorage.getItem('customRecipes')||'[]'); }catch(e){}
+let recipeOverrides = {};
+try{ recipeOverrides = JSON.parse(localStorage.getItem('recipeOverrides')||'{}'); }catch(e){}
+let favorites = [];
+try{ favorites = JSON.parse(localStorage.getItem('favorites')||'[]'); }catch(e){}
+
+let currentCat = '全部配方';
+let activeTags = [];
+let searchQuery = '';
+let ingCheck = '';
+let showFavOnly = false;
+let scaleMap = {}; // recipeId -> scale
+let editingId = null;
+let currentFontSize = 16;
+
+// ==================== 初始化 ====================
+function init(){
+  updateCustomCount();
+  renderRecipes();
+  // 默认倍率
+  recipes.forEach(r => scaleMap[r.id] = 1);
+  customRecipes.forEach(r => scaleMap[r.id] = 1);
+}
+
+function getAllRecipes(){
+  // 内置配方：如果有override就用override替换
+  const builtIn = recipes.map(r => recipeOverrides[r.id] ? {...r, ...recipeOverrides[r.id]} : r);
+  return [...builtIn, ...customRecipes];
+}
+
+// ==================== 渲染配方列表 ====================
+function renderRecipes(){
+  let list = getAllRecipes();
+  
+  // 分类筛选
+  if(currentCat !== '全部配方'){
+    list = list.filter(r => r.cat === currentCat);
+  }
+  
+  // 标签筛选
+  if(activeTags.length > 0){
+    list = list.filter(r => activeTags.every(t => r.tags.includes(t)));
+  }
+  
+  // 搜索
+  if(searchQuery){
+    const q = searchQuery.toLowerCase();
+    list = list.filter(r => 
+      r.name.toLowerCase().includes(q) ||
+      r.ingredients.some(i => i.name.toLowerCase().includes(q)) ||
+      r.steps.some(s => s.toLowerCase().includes(q))
+    );
+  }
+  
+  // 原料反查
+  if(ingCheck){
+    list = list.filter(r => r.ingredients.some(i => i.name.includes(ingCheck)));
+  }
+  
+  // 收藏筛选
+  if(showFavOnly){
+    list = list.filter(r => favorites.includes(r.id));
+  }
+  
+  // 更新标题和计数
+  $('contentTitle').textContent = showFavOnly ? '我的收藏' : currentCat;
+  const countText = list.length === getAllRecipes().length ? 
+    `共 ${list.length} 个配方` : 
+    `共 ${getAllRecipes().length} 个配方 · 已选 ${list.length} 个`;
+  $('contentCount').textContent = countText;
+  
+  // 渲染
+  const container = $('recipeList');
+  if(list.length === 0){
+    container.innerHTML = '<div class="empty-state">没有找到匹配的配方</div>';
+    return;
+  }
+  
+  container.innerHTML = list.map(r => renderRecipeCard(r)).join('');
+}
+
+function renderRecipeCard(r){
+  const scale = scaleMap[r.id] || 1;
+  const isFav = favorites.includes(r.id);
+  const isCustom = r.id > 37;
+  
+  // 配料网格
+  let ingHtml = '<div class="ing-grid">';
+  r.ingredients.forEach(ing => {
+    const g = parseFloat(ing.g) || 0;
+    const unit = ing.g.replace(/[\d.]/g, '');
+    const num = parseFloat(ing.g) || 0;
+    const scaled = num > 0 ? (num * scale).toFixed(num % 1 === 0 ? 0 : 1) + unit : ing.g;
+    ingHtml += `<div class="ing-item"><span class="ing-name">${ing.name}</span><span class="ing-weight">${scaled}</span></div>`;
+  });
+  ingHtml += '</div>';
+  
+  // 步骤
+  let stepsHtml = '';
+  if(r.steps && r.steps.length){
+    stepsHtml = '<div class="rc-steps"><div class="rc-steps-title">📋 步骤</div>';
+    r.steps.forEach((s, i) => {
+      stepsHtml += `<div class="step-item"><span class="step-num">${i+1}</span><span class="step-text">${s}</span></div>`;
+    });
+    stepsHtml += '</div>';
+  }
+  
+  // 倍率按钮
+  const scales = [0.5, 1, 2, 3, 5];
+  let scaleHtml = '<span class="scale-label">倍率换算：</span>';
+  scales.forEach(s => {
+    const label = s === 0.5 ? '½' : '×' + s;
+    const active = scale === s ? 'active' : '';
+    scaleHtml += `<button class="scale-btn ${active}" onclick="setScale(${r.id}, ${s})">${label}</button>`;
+  });
+  scaleHtml += `<input type="number" class="scale-input" value="${scale === 1 ? '' : scale}" placeholder="1" onchange="setScale(${r.id}, parseFloat(this.value)||1)">`;
+  scaleHtml += `<button class="scale-btn" onclick="setScale(${r.id}, 1)">↺ 复位</button>`;
+  
+  // 标签
+  const tagHtml = r.tags.map(t => `<span class="info-tag storage" style="font-size:0.6rem;padding:1px 6px">${t}</span>`).join('');
+  
+  return `<div class="recipe-card" id="card-${r.id}">
+    <div class="rc-header">
+      <span class="rc-cat-tag">${r.cat.replace('类','')}</span>
+      <span class="rc-name">${r.name}</span>
+      <span class="rc-stars">${'★'.repeat(r.difficulty)}${'☆'.repeat(5-r.difficulty)}</span>
+      <div class="rc-actions">
+        <button class="rc-action ${isFav?'fav':''}" onclick="toggleFav(${r.id})" title="收藏">${isFav?'★':'☆'}</button>
+        <button class="rc-action" onclick="editRecipe(${r.id})" title="编辑">✎</button>
+        <button class="rc-action" onclick="deleteRecipe(${r.id})" title="${isCustom?'删除':'重置'}">${isCustom?'🗑':'↺'}</button>
+      </div>
+    </div>
+    <div class="rc-info">
+      ${r.temp?`<span class="info-tag temp">🔥 ${r.temp}</span>`:''}
+      ${r.time?`<span class="info-tag time">⏱ ${r.time}</span>`:''}
+      ${r.storage?`<span class="info-tag storage">📦 ${r.storage}</span>`:''}
+      ${tagHtml}
+    </div>
+    ${r.tips?`<div class="rc-tips"><span class="tip-icon">💡</span><span>${r.tips}</span></div>`:''}
+    <div class="rc-scale">${scaleHtml}</div>
+    <div class="rc-ingredients">${ingHtml}</div>
+    ${stepsHtml}
+    <div class="rc-footer">
+      <button class="rc-footer-btn" onclick="copyRecipe(${r.id})">📋 复制</button>
+      <button class="rc-footer-btn" onclick="startTimer('${r.name}', '${r.time}')">⏱ 计时</button>
+    </div>
+  </div>`;
+}
+
+// ==================== 筛选功能 ====================
+function filterCat(cat){
+  currentCat = cat;
+  showFavOnly = false;
+  document.querySelectorAll('.cat-item').forEach(el => {
+    el.classList.toggle('active', el.dataset.cat === cat);
+  });
+  renderRecipes();
+}
+
+function toggleTag(tag){
+  const idx = activeTags.indexOf(tag);
+  if(idx >= 0) activeTags.splice(idx, 1);
+  else activeTags.push(tag);
+  updateTagUI();
+  renderRecipes();
+}
+
+function toggleFilterTag(tag){
+  toggleTag(tag);
+}
+
+function updateTagUI(){
+  document.querySelectorAll('.tag-item, .filter-tag').forEach(el => {
+    const tag = el.dataset.tag || el.dataset.ftag;
+    if(tag) el.classList.toggle('active', activeTags.includes(tag));
+  });
+}
+
+function clearAllTags(){
+  activeTags = [];
+  updateTagUI();
+  renderRecipes();
+}
+
+function doSearch(){
+  searchQuery = $('searchInput').value.trim();
+  renderRecipes();
+}
+
+function doIngCheck(){
+  ingCheck = $('ingCheckInput').value.trim();
+  renderRecipes();
+}
+
+function clearIngCheck(){
+  ingCheck = '';
+  $('ingCheckInput').value = '';
+  renderRecipes();
+}
+
+function showFavorites(){
+  showFavOnly = !showFavOnly;
+  renderRecipes();
+}
+
+// ==================== 倍率换算 ====================
+function setScale(id, scale){
+  scaleMap[id] = scale;
+  renderRecipes();
+}
+
+// ==================== 收藏 ====================
+function toggleFav(id){
+  const idx = favorites.indexOf(id);
+  if(idx >= 0) favorites.splice(idx, 1);
+  else favorites.push(id);
+  localStorage.setItem('favorites', JSON.stringify(favorites));
+  renderRecipes();
+}
+
+// ==================== 复制配方 ====================
+function copyRecipe(id){
+  const r = getAllRecipes().find(x => x.id === id);
+  if(!r) return;
+  const text = `${r.name}\n${r.temp} ${r.time}\n配料：\n${r.ingredients.map(i => i.name + ' ' + i.g).join('\n')}\n步骤：\n${r.steps.join('\n')}`;
+  navigator.clipboard.writeText(text).then(() => showToast('已复制到剪贴板'));
+}
+
+// ==================== 计时器 ====================
+function startTimer(name, timeStr){
+  const min = parseInt(timeStr) || 0;
+  if(min <= 0){ showToast('无法识别时间'); return; }
+  const sec = min * 60;
+  let remaining = sec;
+  const timerId = 'timer_' + Date.now();
+  
+  // 创建浮动计时器
+  const div = document.createElement('div');
+  div.id = timerId;
+  div.style.cssText = 'position:fixed;bottom:20px;right:20px;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 16px;box-shadow:var(--shadow);z-index:999;font-size:0.85rem;';
+  div.innerHTML = `<div style="font-weight:700;margin-bottom:4px">⏱ ${name}</div><div id="${timerId}_time">${min}:00</div><button onclick="clearInterval(${timerId}_interval);document.getElementById('${timerId}').remove()" style="margin-top:6px;padding:4px 10px;border-radius:6px;border:1px solid var(--border);background:transparent;font-size:0.7rem;cursor:pointer">取消</button>`;
+  document.body.appendChild(div);
+  
+  window[timerId + '_interval'] = setInterval(() => {
+    remaining--;
+    const m = Math.floor(remaining / 60);
+    const s = remaining % 60;
+    const el = document.getElementById(timerId + '_time');
+    if(el) el.textContent = `${m}:${String(s).padStart(2,'0')}`;
+    if(remaining <= 0){
+      clearInterval(window[timerId + '_interval']);
+      showToast('⏱ ' + name + ' 计时结束！');
+      if(el) el.innerHTML = '<b style="color:var(--pink-dark)">计时结束！</b>';
+    }
+  }, 1000);
+}
+
+// ==================== 新建/编辑 ====================
+function showAddModal(){
+  editingId = null;
+  $('modalTitle').textContent = '新建配方';
+  $('mName').value = '';
+  $('mCat').value = '面包类';
+  $('mTemp').value = '';
+  $('mTime').value = '';
+  $('mStorage').value = '常温';
+  $('mTags').value = '';
+  $('mTips').value = '';
+  $('mSteps').value = '';
+  $('mIngredients').innerHTML = '<div class="ingredient-row"><input placeholder="原料名"><input class="g-input" placeholder="克重"></div>';
+  $('modalOverlay').classList.add('show');
+}
+
+function addIngRow(){
+  const div = document.createElement('div');
+  div.className = 'ingredient-row';
+  div.innerHTML = '<input placeholder="原料名"><input class="g-input" placeholder="克重">';
+  $('mIngredients').appendChild(div);
+}
+
+function editRecipe(id){
+  const r = getAllRecipes().find(x => x.id === id);
+  if(!r) return;
+  editingId = id;
+  const isBuiltIn = id <= 45;
+  $('modalTitle').textContent = isBuiltIn ? '编辑配方（修改内置）' : '编辑配方';
+  $('mName').value = r.name;
+  $('mCat').value = r.cat;
+  $('mTemp').value = r.temp || '';
+  $('mTime').value = r.time || '';
+  $('mStorage').value = r.storage || '常温';
+  $('mTags').value = (r.tags||[]).join(',');
+  $('mTips').value = r.tips || '';
+  $('mSteps').value = (r.steps||[]).join('\n');
+  
+  $('mIngredients').innerHTML = '';
+  (r.ingredients||[]).forEach(ing => {
+    const div = document.createElement('div');
+    div.className = 'ingredient-row';
+    div.innerHTML = `<input value="${ing.name}"><input class="g-input" value="${ing.g}">`;
+    $('mIngredients').appendChild(div);
+  });
+  // 如果没有配料行，加一个空的
+  if($('mIngredients').children.length === 0) addIngRow();
+  $('modalOverlay').classList.add('show');
+}
+
+function saveRecipe(){
+  const name = $('mName').value.trim();
+  if(!name){ showToast('请填写配方名称'); return; }
+  
+  const ingredients = [];
+  document.querySelectorAll('#mIngredients .ingredient-row').forEach(row => {
+    const inputs = row.querySelectorAll('input');
+    if(inputs[0].value.trim()){
+      ingredients.push({name: inputs[0].value.trim(), g: inputs[1].value.trim() || '适量'});
+    }
+  });
+  
+  const recipe = {
+    name: name,
+    cat: $('mCat').value,
+    tags: $('mTags').value.split(',').map(t => t.trim()).filter(t => t),
+    temp: $('mTemp').value.trim(),
+    time: $('mTime').value.trim(),
+    storage: $('mStorage').value.trim() || '常温',
+    difficulty: 2,
+    tips: $('mTips').value.trim(),
+    ingredients: ingredients,
+    steps: $('mSteps').value.split('\n').map(s => s.trim()).filter(s => s)
+  };
+  
+  if(editingId){
+    if(editingId <= 45){
+      // 编辑内置配方：存到overrides
+      recipeOverrides[editingId] = recipe;
+      recipe.id = editingId;
+      localStorage.setItem('recipeOverrides', JSON.stringify(recipeOverrides));
+    } else {
+      // 编辑自定义配方
+      recipe.id = editingId;
+      const idx = customRecipes.findIndex(r => r.id === editingId);
+      if(idx >= 0) customRecipes[idx] = recipe;
+    }
+  } else {
+    // 新建配方
+    recipe.id = 1000 + customRecipes.length + 1;
+    customRecipes.push(recipe);
+  }
+  
+  localStorage.setItem('customRecipes', JSON.stringify(customRecipes));
+  scaleMap[recipe.id] = 1;
+  closeModal();
+  updateCustomCount();
+  renderRecipes();
+  showToast('保存成功');
+}
+
+function deleteRecipe(id){
+  if(id <= 37){
+    // 内置配方：重置修改
+    if(!confirm('确定重置该配方为原始版本吗？')) return;
+    delete recipeOverrides[id];
+    localStorage.setItem('recipeOverrides', JSON.stringify(recipeOverrides));
+    renderRecipes();
+    showToast('已重置为原始配方');
+  } else {
+    // 自定义配方：删除
+    if(!confirm('确定删除这个配方吗？')) return;
+    customRecipes = customRecipes.filter(r => r.id !== id);
+    localStorage.setItem('customRecipes', JSON.stringify(customRecipes));
+    updateCustomCount();
+    renderRecipes();
+    showToast('已删除');
+  }
+}
+
+function closeModal(){
+  $('modalOverlay').classList.remove('show');
+}
+
+function updateCustomCount(){
+  $('customCount').textContent = customRecipes.length;
+}
+
+// ==================== 其他功能 ====================
+function toggleDark(){
+  document.body.classList.toggle('dark');
+}
+
+function fontSize(delta){
+  currentFontSize += delta;
+  if(currentFontSize < 12) currentFontSize = 12;
+  if(currentFontSize > 24) currentFontSize = 24;
+  document.documentElement.style.fontSize = currentFontSize + 'px';
+}
+
+function toggleSidebar(){
+  $('sidebar').classList.toggle('open');
+}
+
+function showShopping(){
+  showToast('采购清单功能开发中');
+}
+
+function showToast(msg){
+  const t = document.createElement('div');
+  t.textContent = msg;
+  t.style.cssText = 'position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.75);color:#fff;padding:8px 20px;border-radius:20px;font-size:0.78rem;z-index:999;';
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2000);
+}
+
+const $ = id => document.getElementById(id);
+
+// 初始化
+init();
+</script>
+</body>
+</html>
