@@ -77,6 +77,12 @@ body.dark .tag-item{background:#1a1a3e}
   margin-top:auto;padding:10px 14px;border-top:1px solid var(--border);
   font-size:0.65rem;color:var(--text-sub);
 }
+.sidebar-refresh{
+  background:none;border:none;font-size:1rem;cursor:pointer;
+  padding:2px 4px;border-radius:6px;line-height:1;
+}
+.sidebar-refresh:hover{background:var(--pink-light)}
+.sidebar-refresh:active{transform:rotate(180deg);transition:transform 0.3s}
 
 /* ===== 主内容区 ===== */
 .main{margin-left:var(--sidebar-w);min-height:100vh}
@@ -577,7 +583,8 @@ body.dark .import-preview-box{background:#1a1a3e}
   </div>
 
   <div class="sidebar-footer">
-    内置 45 · 自定义 <span id="customCount">0</span>
+    <span>内置 45 · 自定义 <span id="customCount">0</span></span>
+    <button class="sidebar-refresh" onclick="location.reload(true)" title="刷新页面">🔄</button>
   </div>
 </div>
 
