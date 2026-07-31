@@ -599,7 +599,6 @@ body.dark .import-preview-box{background:#1a1a3e}
     <button class="toolbar-btn primary" onclick="showAddModal()">+ 新建</button>
     <button class="toolbar-btn" onclick="showImportModal()">📥 导入</button>
     <button class="toolbar-btn" onclick="showFavorites()">⭐ 收藏</button>
-    <button class="toolbar-btn" onclick="showShopping()">🛒 采购</button>
     <button class="toolbar-btn" onclick="toggleDark()">🌙</button>
     <button class="toolbar-btn" onclick="fontSize(-1)">A-</button>
     <button class="toolbar-btn" onclick="fontSize(1)">A+</button>
@@ -1258,10 +1257,6 @@ function fontSize(delta){
 
 function toggleSidebar(){
   $('sidebar').classList.toggle('open');
-}
-
-function showShopping(){
-  showToast('采购清单功能开发中');
 }
 
 // ==================== 备忘录 ====================
