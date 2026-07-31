@@ -354,6 +354,71 @@ body.dark .tag-item{background:#1a1a3e}
 }
 .sidebar-memo.active .memo-count{background:rgba(255,255,255,0.3)}
 
+/* 侧边栏个性化设置入口 */
+.sidebar-settings{
+  padding:8px 14px;border-top:1px solid var(--border);
+  display:flex;align-items:center;gap:8px;cursor:pointer;
+  font-size:0.8rem;color:var(--text);transition:all 0.15s;
+}
+.sidebar-settings:hover{color:var(--pink-dark);background:var(--pink-light)}
+
+/* 个性化设置弹窗 */
+.settings-modal{width:92%;max-width:420px}
+.settings-field{margin-bottom:18px}
+.settings-field-title{
+  font-size:0.85rem;font-weight:600;color:var(--text);
+  margin-bottom:8px;
+}
+.settings-input{
+  width:100%;padding:11px 14px;border:1.5px solid var(--border);
+  border-radius:12px;font-size:0.9rem;outline:none;
+  background:var(--card);color:var(--text);font-family:inherit;
+}
+.settings-input:focus{border-color:var(--pink)}
+.settings-icon-grid{
+  display:grid;grid-template-columns:repeat(6,1fr);gap:8px;
+}
+.settings-icon-item{
+  aspect-ratio:1;border-radius:14px;background:#f7f7f7;
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.6rem;cursor:pointer;border:2px solid transparent;
+  transition:all 0.15s;
+}
+body.dark .settings-icon-item{background:#1a1a3e}
+.settings-icon-item:hover{border-color:var(--pink);transform:scale(1.05)}
+.settings-icon-item.active{
+  background:var(--pink-light);border-color:var(--pink);
+}
+.settings-preview{
+  display:flex;align-items:center;gap:14px;
+  padding:14px;background:#fafafa;border-radius:14px;
+  border:1px dashed var(--border);
+}
+body.dark .settings-preview{background:#1a1a3e}
+.settings-preview-icon{
+  width:64px;height:64px;border-radius:16px;
+  background:linear-gradient(135deg,#c8956d,#a8754f);
+  display:flex;align-items:center;justify-content:center;
+  font-size:2rem;flex-shrink:0;
+}
+.settings-preview-name{
+  font-size:1rem;font-weight:700;color:var(--text);
+}
+.settings-preview-label{font-size:0.72rem;color:var(--text-sub);margin-top:2px}
+.settings-hint{
+  margin-top:14px;padding:10px 12px;background:#fff8e1;
+  border-radius:10px;font-size:0.7rem;color:#8d6e63;line-height:1.5;
+}
+body.dark .settings-hint{background:#2d1b2e;color:#ccc}
+.settings-upload{
+  margin-top:10px;display:inline-flex;align-items:center;gap:6px;
+  padding:8px 14px;border:1.5px dashed var(--border);
+  border-radius:10px;font-size:0.78rem;cursor:pointer;
+  color:var(--text-sub);background:transparent;
+}
+.settings-upload:hover{border-color:var(--pink);color:var(--pink-dark)}
+.settings-upload input{display:none}
+
 /* 响应式 */
 @media(max-width:768px){
   .sidebar{transform:translateX(-100%);transition:transform 0.3s}
@@ -446,6 +511,11 @@ body.dark .tag-item{background:#1a1a3e}
     <span>📝</span>
     <span>备忘录</span>
     <span class="memo-count" id="memoCount">0</span>
+  </div>
+
+  <div class="sidebar-settings" onclick="openSettings()">
+    <span>⚙️</span>
+    <span>个性化设置</span>
   </div>
 
   <div class="sidebar-footer">
@@ -557,6 +627,45 @@ body.dark .tag-item{background:#1a1a3e}
     <div class="modal-footer">
       <button class="modal-btn" onclick="closeModal()">取消</button>
       <button class="modal-btn primary" onclick="saveRecipe()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- 个性化设置弹窗 -->
+<div class="modal-overlay" id="settingsOverlay" onclick="if(event.target===this)closeSettings()">
+  <div class="modal settings-modal">
+    <div class="modal-header">
+      <span class="modal-title">⚙ 个性化设置（主屏幕名称 / 图标）</span>
+      <button class="modal-close" onclick="closeSettings()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="settings-field">
+        <div class="settings-field-title">主屏幕 / 应用名称</div>
+        <input type="text" class="settings-input" id="settingsName" maxlength="12" placeholder="如：之之烘焙">
+      </div>
+      <div class="settings-field">
+        <div class="settings-field-title">主屏幕图标</div>
+        <div class="settings-icon-grid" id="settingsIconGrid"></div>
+        <label class="settings-upload">
+          <span>📷</span><span>上传图片</span>
+          <input type="file" accept="image/*" id="settingsUpload" onchange="uploadIcon(event)">
+        </label>
+      </div>
+      <div class="settings-field">
+        <div class="settings-field-title">预览</div>
+        <div class="settings-preview">
+          <div class="settings-preview-icon" id="settingsPreviewIcon">🍰</div>
+          <div>
+            <div class="settings-preview-name" id="settingsPreviewName">烘焙工作台</div>
+            <div class="settings-preview-label">iOS 添加到主屏幕时会读取这个名称和图标</div>
+          </div>
+        </div>
+        <div class="settings-hint">提示：iOS / iPadOS 在「添加到主屏幕」时会读取当前的名称与图标。修改后请重新添加到主屏幕一次，新的名称与图标才会生效。</div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="modal-btn" onclick="closeSettings()">取消</button>
+      <button class="modal-btn primary" onclick="saveSettings()">保存</button>
     </div>
   </div>
 </div>
@@ -1049,6 +1158,94 @@ function renderMemos(){
   `).join('');
 }
 
+// ==================== 个性化设置 ====================
+const ICONS = ['🧸','🐻','🧁','🍯','🍰','🥐','🍞','🍪','🍮','🍬','🥤','⭐'];
+let appSettings = {name:'烘焙工作台', icon:'🍰'};
+try{ appSettings = Object.assign({name:'烘焙工作台',icon:'🍰'}, JSON.parse(localStorage.getItem('appSettings')||'{}')); }catch(e){}
+
+function applyAppSettings(){
+  // 更新页面标题、侧边栏 logo
+  document.title = appSettings.name || '烘焙工作台';
+  const logoIcon = document.querySelector('.sidebar-logo .logo-icon');
+  const logoText = document.querySelector('.sidebar-logo .logo-text');
+  if(logoIcon && appSettings.icon){
+    if(/^data:|^https?:/.test(appSettings.icon)){
+      // 图片URL/Base64
+      logoIcon.innerHTML = `<img src="${appSettings.icon}" style="width:100%;height:100%;border-radius:8px;object-fit:cover">`;
+    } else {
+      logoIcon.textContent = appSettings.icon;
+    }
+  }
+  if(logoText) logoText.textContent = appSettings.name || '烘焙工作台';
+}
+
+function openSettings(){
+  $('settingsName').value = appSettings.name || '烘焙工作台';
+  renderIconGrid();
+  updateSettingsPreview();
+  $('settingsOverlay').classList.add('show');
+}
+
+function closeSettings(){
+  $('settingsOverlay').classList.remove('show');
+}
+
+function renderIconGrid(){
+  const grid = $('settingsIconGrid');
+  grid.innerHTML = ICONS.map(icon => {
+    const active = icon === appSettings.icon ? 'active' : '';
+    return `<div class="settings-icon-item ${active}" data-icon="${icon}" onclick="pickIcon('${icon}')">${icon}</div>`;
+  }).join('');
+  // 如果是上传的图片，也高亮一下
+  if(appSettings.icon && !ICONS.includes(appSettings.icon)){
+    grid.insertAdjacentHTML('beforeend', `<div class="settings-icon-item active" data-icon="${appSettings.icon}" onclick="pickIcon('${appSettings.icon}')"><img src="${appSettings.icon}" style="width:100%;height:100%;border-radius:10px;object-fit:cover"></div>`);
+  }
+}
+
+function pickIcon(icon){
+  appSettings.icon = icon;
+  renderIconGrid();
+  updateSettingsPreview();
+}
+
+function uploadIcon(e){
+  const file = e.target.files[0];
+  if(!file) return;
+  if(file.size > 2*1024*1024){ showToast('图片太大，请选择小于 2MB 的图片'); return; }
+  const reader = new FileReader();
+  reader.onload = ev => {
+    appSettings.icon = ev.target.result; // base64 dataURL
+    renderIconGrid();
+    updateSettingsPreview();
+  };
+  reader.readAsDataURL(file);
+}
+
+function updateSettingsPreview(){
+  $('settingsPreviewName').textContent = $('settingsName').value || '烘焙工作台';
+  const iconEl = $('settingsPreviewIcon');
+  const icon = appSettings.icon || '🍰';
+  if(/^data:|^https?:/.test(icon)){
+    iconEl.innerHTML = `<img src="${icon}" style="width:100%;height:100%;border-radius:14px;object-fit:cover">`;
+  } else {
+    iconEl.textContent = icon;
+  }
+}
+
+// 监听输入实时更新预览
+document.addEventListener('input', e => {
+  if(e.target && e.target.id === 'settingsName') updateSettingsPreview();
+});
+
+function saveSettings(){
+  const name = $('settingsName').value.trim() || '烘焙工作台';
+  appSettings.name = name;
+  localStorage.setItem('appSettings', JSON.stringify(appSettings));
+  applyAppSettings();
+  closeSettings();
+  showToast('已保存，刷新或重新添加主屏幕后生效');
+}
+
 function showToast(msg){
   const t = document.createElement('div');
   t.textContent = msg;
@@ -1061,6 +1258,7 @@ const $ = id => document.getElementById(id);
 
 // 初始化
 init();
+applyAppSettings();
 </script>
 </body>
 </html>
